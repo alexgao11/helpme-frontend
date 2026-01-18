@@ -1,0 +1,25 @@
+<view class="login-container">
+  <!-- 图标 -->
+  <view class="icon-wrapper">
+    <view class="icon-circle">
+      <image class="shield-icon" src="/assets/icons/shield.svg" mode="aspectFit"></image>
+    </view>
+  </view>
+
+  <!-- 标题 -->
+  <view class="title">一键求助</view>
+  <view class="subtitle">用于紧急情况下通知家人并电话联系</view>
+
+  <!-- 提示框 -->
+  <view class="notice-box">
+    <text>需要获取手机号作为紧急联系方式</text>
+  </view>
+
+  <!-- 底部区域 -->
+  <view class="bottom-area">
+    <button class="auth-btn" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber">
+      授权手机号并继续
+    </button>
+    <view class="disclaimer">仅用于紧急通知，不做营销用途</view>
+  </view>
+</view>

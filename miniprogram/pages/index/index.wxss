@@ -1,0 +1,19 @@
+/**index.wxss**/
+page {
+  height: 100vh;
+}
+
+.home-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #ffffff;
+}
+
+.greeting {
+  font-size: 48rpx;
+  font-weight: 500;
+  color: #333333;
+}

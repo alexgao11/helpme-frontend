@@ -1,0 +1,4 @@
+<!--index.wxml-->
+<view class="home-container">
+  <view class="greeting">你好 {{nickname}}</view>
+</view>

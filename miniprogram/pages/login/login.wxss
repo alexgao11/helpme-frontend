@@ -1,0 +1,90 @@
+.login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #ffffff;
+  padding: 0 48rpx;
+}
+
+/* 图标 */
+.icon-wrapper {
+  margin-top: 200rpx;
+}
+
+.icon-circle {
+  width: 140rpx;
+  height: 140rpx;
+  background-color: #3478F6;
+  border-radius: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shield-icon {
+  width: 80rpx;
+  height: 80rpx;
+}
+
+/* 标题 */
+.title {
+  margin-top: 48rpx;
+  font-size: 44rpx;
+  font-weight: 600;
+  color: #000000;
+}
+
+.subtitle {
+  margin-top: 16rpx;
+  font-size: 28rpx;
+  color: #666666;
+}
+
+/* 提示框 */
+.notice-box {
+  margin-top: 80rpx;
+  padding: 32rpx 48rpx;
+  border: 2rpx solid #E5E5E5;
+  border-radius: 16rpx;
+}
+
+.notice-box text {
+  font-size: 28rpx;
+  color: #333333;
+}
+
+/* 底部区域 */
+.bottom-area {
+  position: fixed;
+  bottom: 120rpx;
+  left: 48rpx;
+  right: 48rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.auth-btn {
+  width: 100%;
+  height: 96rpx;
+  background-color: #3478F6;
+  color: #ffffff;
+  font-size: 32rpx;
+  font-weight: 500;
+  border-radius: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+}
+
+.auth-btn::after {
+  border: none;
+}
+
+.disclaimer {
+  margin-top: 24rpx;
+  font-size: 24rpx;
+  color: #999999;
+}
