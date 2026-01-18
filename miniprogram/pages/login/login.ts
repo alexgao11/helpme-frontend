@@ -6,7 +6,7 @@ Page({
   onLoad() {},
 
   // 获取手机号回调
-  async onGetPhoneNumber(e: WechatMiniprogram.GetPhoneNumberEventDetail & { detail: { code?: string; errMsg: string } }) {
+  async onGetPhoneNumber(e: WechatMiniprogram.ButtonGetUserInfo) {
     if (e.detail.errMsg !== 'getPhoneNumber:ok') {
       wx.showToast({
         title: '需要授权手机号才能使用',
@@ -15,8 +15,7 @@ Page({
       return
     }
 
-    const phoneCode = e.detail.code
-    if (!phoneCode) {
+    if (!e.detail.encryptedData || !e.detail.iv) {
       wx.showToast({
         title: '获取手机号失败',
         icon: 'none'
@@ -27,20 +26,38 @@ Page({
     wx.showLoading({ title: '登录中...' })
 
     try {
-      // TODO: 调用登录API
-      // const res = await loginWithPhone(phoneCode)
-      // 占位符：模拟登录成功
-      const mockResponse = {
-        token: 'mock_token_xxx',
-        userInfo: {
-          nickname: '用户',
-          phone: '138****8888'
-        }
-      }
+      // 获取微信登录凭证
+      const loginRes = await new Promise<WechatMiniprogram.LoginSuccessCallbackResult>((resolve, reject) => {
+        wx.login({
+          success: resolve,
+          fail: reject
+        })
+      })
+
+      // 调用登录API
+      const response = await new Promise<{ code: number; message: string; data: { token: string; user: any } }>((resolve, reject) => {
+        wx.request({
+          url: 'http://127.0.0.1:3000/api/auth/login',
+          method: 'POST',
+          data: {
+            code: loginRes.code,
+            encryptedData: e.detail.encryptedData,
+            iv: e.detail.iv
+          },
+          success: (res) => {
+            if (res.statusCode === 200 && (res.data as any).code === 0) {
+              resolve(res.data as any)
+            } else {
+              reject(new Error((res.data as any).message || '登录失败'))
+            }
+          },
+          fail: reject
+        })
+      })
 
       // 保存登录信息
-      setToken(mockResponse.token)
-      setUserInfo(mockResponse.userInfo)
+      setToken(response.data.token)
+      setUserInfo(response.data.user)
 
       wx.hideLoading()
 
