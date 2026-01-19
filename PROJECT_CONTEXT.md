@@ -163,7 +163,7 @@ Backend BFF: `http://127.0.0.1:3000` (dev)
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
-| `/api/auth/login` | POST | Login with WeChat code + encrypted phone data |
+| `/api/user/login` | POST | Login with WeChat code + encrypted phone data |
 
 Request body for login:
 ```json

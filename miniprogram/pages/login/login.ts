@@ -37,7 +37,7 @@ Page({
       // 调用登录API
       const response = await new Promise<{ code: number; message: string; data: { token: string; user: any } }>((resolve, reject) => {
         wx.request({
-          url: 'http://127.0.0.1:3000/api/auth/login',
+          url: 'http://127.0.0.1:3000/api/user/login',
           method: 'POST',
           data: {
             code: loginRes.code,
@@ -45,7 +45,7 @@ Page({
             iv: e.detail.iv
           },
           success: (res) => {
-            if (res.statusCode === 200 && (res.data as any).code === 0) {
+            if (res.statusCode === 200) {
               resolve(res.data as any)
             } else {
               reject(new Error((res.data as any).message || '登录失败'))
@@ -72,6 +72,7 @@ Page({
         })
       }
     } catch (error) {
+      console.log(error)
       wx.hideLoading()
       wx.showToast({
         title: '登录失败，请重试',

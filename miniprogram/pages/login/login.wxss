@@ -77,6 +77,9 @@
   align-items: center;
   justify-content: center;
   border: none;
+  white-space: nowrap;
+  padding: 0 48rpx;
+  box-sizing: border-box;
 }
 
 .auth-btn::after {
