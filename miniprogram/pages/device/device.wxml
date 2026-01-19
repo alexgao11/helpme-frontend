@@ -1,6 +1,64 @@
 <view class="page-container">
+  <!-- 已连接设备 -->
+  <view class="connected-state" wx:if="{{connectedDevice}}">
+    <view class="connected-icon">
+      <view class="bluetooth-icon connected"></view>
+    </view>
+    <view class="connected-title">已连接</view>
+    <view class="connected-name">{{connectedDevice.name}}</view>
+    <view class="signal-info">信号强度: {{connectedDevice.RSSI}} dBm</view>
+
+    <!-- 收到的消息 -->
+    <view class="message-box" wx:if="{{receivedMessage}}">
+      <view class="message-label">收到消息:</view>
+      <view class="message-content">{{receivedMessage}}</view>
+    </view>
+
+    <!-- 操作按钮 -->
+    <view class="action-buttons">
+      <button class="action-btn" bindtap="onGetInfo" wx:if="{{bleConnected}}">获取信息</button>
+      <button class="disconnect-btn" bindtap="disconnectDevice">断开连接</button>
+    </view>
+  </view>
+
+  <!-- 扫描状态 -->
+  <view class="scan-state" wx:elif="{{isScanning}}">
+    <!-- 雷达扫描动画 -->
+    <view class="radar-container">
+      <view class="radar-circle radar-circle-1"></view>
+      <view class="radar-circle radar-circle-2"></view>
+      <view class="radar-circle radar-circle-3"></view>
+      <view class="radar-circle radar-circle-4"></view>
+      <view class="radar-sweep"></view>
+      <view class="radar-center">
+        <view class="radar-dot"></view>
+      </view>
+    </view>
+    <view class="scan-status">{{scanStatus}}</view>
+
+    <!-- 设备列表 -->
+    <view class="device-list" wx:if="{{deviceList.length > 0}}">
+      <view class="device-list-title">发现 {{deviceList.length}} 个设备</view>
+      <view
+        class="device-item"
+        wx:for="{{deviceList}}"
+        wx:key="deviceId"
+        data-device="{{item}}"
+        bindtap="onSelectDevice"
+      >
+        <view class="device-info">
+          <view class="device-name">{{item.name}}</view>
+          <view class="device-signal">信号: {{item.RSSI}} dBm</view>
+        </view>
+        <view class="device-connect-text">点击连接</view>
+      </view>
+    </view>
+
+    <button class="cancel-btn" bindtap="onAddButton">取消扫描</button>
+  </view>
+
   <!-- 空状态 -->
-  <view class="empty-state">
+  <view class="empty-state" wx:else>
     <view class="empty-icon">
       <view class="icon-grid">
         <view class="grid-item"></view>

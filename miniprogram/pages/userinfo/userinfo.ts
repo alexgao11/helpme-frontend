@@ -43,7 +43,7 @@ Page({
 
     const token = getToken()
     wx.request({
-      url: 'http://127.0.0.1:3000/api/user/me',
+      url: 'http://192.168.86.156:3000/api/user/me',
       method: 'PUT',
       header: {
         'Authorization': `Bearer ${token}`,

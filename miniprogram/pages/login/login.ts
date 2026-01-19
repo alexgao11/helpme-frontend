@@ -37,7 +37,7 @@ Page({
       // 调用登录API
       const response = await new Promise<{ token: string; user: any  }>((resolve, reject) => {
         wx.request({
-          url: 'http://127.0.0.1:3000/api/user/login',
+          url: 'http://192.168.86.156:3000/api/user/login',
           method: 'POST',
           data: {
             code: loginRes.code,
