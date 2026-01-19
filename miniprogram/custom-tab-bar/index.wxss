@@ -39,7 +39,7 @@
   color: #3478F6;
 }
 
-/* 按钮图标 - 四格网格 */
+/* 设备图标 - 四格网格 */
 .icon-grid-small {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

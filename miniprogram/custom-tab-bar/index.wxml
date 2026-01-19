@@ -8,7 +8,7 @@
         <view class="grid-item-small"></view>
       </view>
     </view>
-    <view class="tab-text">按钮</view>
+    <view class="tab-text">设备</view>
   </view>
   <view class="tab-bar-item {{selected === 1 ? 'active' : ''}}" bindtap="switchTab" data-path="/pages/profile/profile" data-index="1">
     <view class="tab-icon">

@@ -43,11 +43,9 @@ Page({
         'Authorization': `Bearer ${token}`
       },
       success: (res: WechatMiniprogram.RequestSuccessCallbackResult) => {
-        const data = res.data as { code: number; data: Contact[] }
-        if (data.code === 0 && Array.isArray(data.data)) {
-          const contacts = data.data.sort((a, b) => a.position - b.position)
+        const data = res.data as Contact[];
+          const contacts = data.sort((a, b) => a.position - b.position)
           this.setData({ contacts })
-        }
       },
       fail: (err) => {
         console.error('获取紧急联系人失败', err)
@@ -114,8 +112,7 @@ Page({
       },
       data: { id },
       success: (res: WechatMiniprogram.RequestSuccessCallbackResult) => {
-        const data = res.data as { code: number }
-        if (data.code === 0) {
+        if (res.statusCode === 200) {
           wx.showToast({ title: '删除成功', icon: 'success' })
           this.loadContacts()
         } else {
@@ -184,8 +181,7 @@ Page({
         phoneNumber: editingContact.phoneNumber
       },
       success: (res: WechatMiniprogram.RequestSuccessCallbackResult) => {
-        const data = res.data as { code: number }
-        if (data.code === 0) {
+        if (res.statusCode === 201) {
           wx.showToast({ title: '添加成功', icon: 'success' })
           this.setData({ showModal: false })
           this.loadContacts()
@@ -217,8 +213,7 @@ Page({
         phoneNumber: editingContact.phoneNumber
       },
       success: (res: WechatMiniprogram.RequestSuccessCallbackResult) => {
-        const data = res.data as { code: number }
-        if (data.code === 0) {
+        if (res.statusCode === 200) {
           wx.showToast({ title: '更新成功', icon: 'success' })
           this.setData({ showModal: false })
           this.loadContacts()

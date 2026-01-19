@@ -8,6 +8,6 @@ Page({
   },
 
   onAddButton() {
-    console.log('添加按钮')
+    console.log('添加设备')
   }
 })

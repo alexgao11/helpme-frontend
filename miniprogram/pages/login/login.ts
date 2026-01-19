@@ -35,7 +35,7 @@ Page({
       })
 
       // 调用登录API
-      const response = await new Promise<{ code: number; message: string; data: { token: string; user: any } }>((resolve, reject) => {
+      const response = await new Promise<{ token: string; user: any  }>((resolve, reject) => {
         wx.request({
           url: 'http://127.0.0.1:3000/api/user/login',
           method: 'POST',
@@ -56,13 +56,13 @@ Page({
       })
 
       // 保存登录信息
-      setToken(response.data.token)
-      setUserInfo(response.data.user)
+      setToken(response.token)
+      setUserInfo(response.user)
 
       wx.hideLoading()
 
       // 根据 nickname 决定跳转页面
-      if (!response.data.user.nickname) {
+      if (!response.user.nickname) {
         wx.switchTab({
           url: '/pages/profile/profile'
         })

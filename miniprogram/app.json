@@ -20,7 +20,7 @@
     "list": [
       {
         "pagePath": "pages/device/device",
-        "text": "按钮"
+        "text": "设备"
       },
       {
         "pagePath": "pages/profile/profile",

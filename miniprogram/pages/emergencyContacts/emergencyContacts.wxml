@@ -22,7 +22,7 @@
     <view class="empty-text">暂无紧急联系人</view>
   </view>
 
-  <!-- 添加按钮 -->
+  <!-- 添加设备 -->
   <view class="add-button-container" wx:if="{{contacts.length < 3}}">
     <button class="add-button" bindtap="onAddTap">+ 添加紧急联系人</button>
   </view>
