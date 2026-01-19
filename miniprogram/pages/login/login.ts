@@ -61,10 +61,16 @@ Page({
 
       wx.hideLoading()
 
-      // 跳转到首页
-      wx.reLaunch({
-        url: '/pages/index/index'
-      })
+      // 根据 nickname 决定跳转页面
+      if (!response.data.user.nickname) {
+        wx.switchTab({
+          url: '/pages/profile/profile'
+        })
+      } else {
+        wx.switchTab({
+          url: '/pages/device/device'
+        })
+      }
     } catch (error) {
       wx.hideLoading()
       wx.showToast({

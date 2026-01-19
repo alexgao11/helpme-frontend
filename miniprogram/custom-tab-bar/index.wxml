@@ -1,0 +1,22 @@
+<view class="tab-bar">
+  <view class="tab-bar-item {{selected === 0 ? 'active' : ''}}" bindtap="switchTab" data-path="/pages/device/device" data-index="0">
+    <view class="tab-icon">
+      <view class="icon-grid-small">
+        <view class="grid-item-small"></view>
+        <view class="grid-item-small"></view>
+        <view class="grid-item-small"></view>
+        <view class="grid-item-small"></view>
+      </view>
+    </view>
+    <view class="tab-text">按钮</view>
+  </view>
+  <view class="tab-bar-item {{selected === 1 ? 'active' : ''}}" bindtap="switchTab" data-path="/pages/profile/profile" data-index="1">
+    <view class="tab-icon">
+      <view class="user-icon-small">
+        <view class="user-head-small"></view>
+        <view class="user-body-small"></view>
+      </view>
+    </view>
+    <view class="tab-text">我的</view>
+  </view>
+</view>

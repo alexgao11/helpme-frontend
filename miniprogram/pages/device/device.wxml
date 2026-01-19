@@ -1,0 +1,16 @@
+<view class="page-container">
+  <!-- 空状态 -->
+  <view class="empty-state">
+    <view class="empty-icon">
+      <view class="icon-grid">
+        <view class="grid-item"></view>
+        <view class="grid-item"></view>
+        <view class="grid-item"></view>
+        <view class="grid-item"></view>
+      </view>
+    </view>
+    <view class="empty-title">还没有绑定按钮</view>
+    <view class="empty-desc">绑定外部按钮后，可在紧急情况一键触发通知</view>
+    <button class="add-btn" bindtap="onAddButton">添加按钮</button>
+  </view>
+</view>

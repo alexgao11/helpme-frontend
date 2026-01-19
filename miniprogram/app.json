@@ -1,5 +1,7 @@
 {
   "pages": [
+    "pages/device/device",
+    "pages/profile/profile",
     "pages/index/index",
     "pages/login/login"
   ],
@@ -7,6 +9,22 @@
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "一键求助",
     "navigationBarBackgroundColor": "#ffffff"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#999999",
+    "selectedColor": "#3478F6",
+    "backgroundColor": "#ffffff",
+    "list": [
+      {
+        "pagePath": "pages/device/device",
+        "text": "按钮"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的"
+      }
+    ]
   },
   "style": "v2",
   "componentFramework": "glass-easel",

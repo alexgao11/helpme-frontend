@@ -1,0 +1,90 @@
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100rpx;
+  background: #ffffff;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  border-top: 1rpx solid #E5E5E5;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tab-bar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 10rpx 0;
+}
+
+.tab-icon {
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4rpx;
+}
+
+.tab-text {
+  font-size: 20rpx;
+  color: #999999;
+}
+
+.tab-bar-item.active .tab-text {
+  color: #3478F6;
+}
+
+/* 按钮图标 - 四格网格 */
+.icon-grid-small {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6rpx;
+}
+
+.grid-item-small {
+  width: 18rpx;
+  height: 18rpx;
+  border: 3rpx solid #999999;
+  border-radius: 4rpx;
+  box-sizing: border-box;
+}
+
+.tab-bar-item.active .grid-item-small {
+  border-color: #3478F6;
+}
+
+/* 用户图标 */
+.user-icon-small {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.user-head-small {
+  width: 18rpx;
+  height: 18rpx;
+  border: 3rpx solid #999999;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.user-body-small {
+  width: 30rpx;
+  height: 14rpx;
+  border: 3rpx solid #999999;
+  border-top-left-radius: 15rpx;
+  border-top-right-radius: 15rpx;
+  border-bottom: none;
+  box-sizing: border-box;
+  margin-top: 2rpx;
+}
+
+.tab-bar-item.active .user-head-small,
+.tab-bar-item.active .user-body-small {
+  border-color: #3478F6;
+}

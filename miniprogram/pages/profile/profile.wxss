@@ -1,0 +1,107 @@
+.page-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #F5F5F5;
+  padding-bottom: calc(100rpx + env(safe-area-inset-bottom));
+}
+
+/* 用户信息区域 */
+.user-section {
+  display: flex;
+  align-items: center;
+  padding: 40rpx 32rpx;
+  background-color: #ffffff;
+}
+
+.user-avatar {
+  width: 120rpx;
+  height: 120rpx;
+  background-color: #3478F6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 24rpx;
+}
+
+.avatar-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.icon-head {
+  width: 36rpx;
+  height: 36rpx;
+  border: 4rpx solid #ffffff;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.icon-body {
+  width: 56rpx;
+  height: 28rpx;
+  border: 4rpx solid #ffffff;
+  border-top-left-radius: 28rpx;
+  border-top-right-radius: 28rpx;
+  border-bottom: none;
+  box-sizing: border-box;
+  margin-top: 4rpx;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #000000;
+  margin-bottom: 8rpx;
+}
+
+.user-phone {
+  font-size: 28rpx;
+  color: #666666;
+}
+
+/* 菜单列表 */
+.menu-list {
+  margin-top: 20rpx;
+  background-color: #ffffff;
+}
+
+.menu-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 32rpx;
+  border-bottom: 1rpx solid #EEEEEE;
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.menu-label {
+  font-size: 30rpx;
+  color: #000000;
+}
+
+.menu-right {
+  display: flex;
+  align-items: center;
+}
+
+.menu-value {
+  font-size: 28rpx;
+  color: #666666;
+  margin-right: 16rpx;
+}
+
+.menu-arrow {
+  font-size: 28rpx;
+  color: #CCCCCC;
+}
