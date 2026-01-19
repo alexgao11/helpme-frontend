@@ -3,6 +3,7 @@
     "pages/device/device",
     "pages/profile/profile",
     "pages/userinfo/userinfo",
+    "pages/emergencyContacts/emergencyContacts",
     "pages/index/index",
     "pages/login/login"
   ],

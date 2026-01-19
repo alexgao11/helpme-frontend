@@ -1,0 +1,57 @@
+<view class="page-container">
+  <!-- 联系人列表 -->
+  <view class="contacts-list" wx:if="{{contacts.length > 0}}">
+    <view class="contact-item" wx:for="{{contacts}}" wx:key="id">
+      <view class="contact-info">
+        <view class="contact-name">{{item.displayName}}</view>
+        <view class="contact-phone">+{{item.countryCode}}-{{item.phoneNumber}}</view>
+      </view>
+      <view class="contact-actions">
+        <view class="contact-edit" catchtap="onContactTap" data-id="{{item.id}}">
+          <text class="edit-text">修改</text>
+        </view>
+        <view class="contact-delete" catchtap="onDeleteTap" data-id="{{item.id}}">
+          <text class="delete-text">删除</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{contacts.length === 0}}">
+    <view class="empty-text">暂无紧急联系人</view>
+  </view>
+
+  <!-- 添加按钮 -->
+  <view class="add-button-container" wx:if="{{contacts.length < 3}}">
+    <button class="add-button" bindtap="onAddTap">+ 添加紧急联系人</button>
+  </view>
+
+  <!-- 弹窗遮罩 -->
+  <view class="modal-overlay" wx:if="{{showModal}}" bindtap="onModalClose"></view>
+
+  <!-- 添加/编辑弹窗 -->
+  <view class="modal-container" wx:if="{{showModal}}">
+    <view class="modal-title">{{isEdit ? '编辑联系人' : '添加联系人'}}</view>
+
+    <view class="modal-field">
+      <view class="field-label">姓名</view>
+      <input class="field-input" placeholder="请输入姓名" value="{{editingContact.name}}" bindinput="onNameInput" />
+    </view>
+
+    <view class="modal-field">
+      <view class="field-label">国家号</view>
+      <input class="field-input" placeholder="请输入国家号" value="{{editingContact.countryCode}}" bindinput="onCountryCodeInput" type="number" />
+    </view>
+
+    <view class="modal-field">
+      <view class="field-label">手机号</view>
+      <input class="field-input" placeholder="请输入手机号" value="{{editingContact.phoneNumber}}" bindinput="onPhoneInput" type="number" />
+    </view>
+
+    <view class="modal-buttons">
+      <button class="modal-btn cancel-btn" bindtap="onModalClose">取消</button>
+      <button class="modal-btn confirm-btn" bindtap="onModalConfirm">{{isEdit ? '更新' : '添加'}}</button>
+    </view>
+  </view>
+</view>

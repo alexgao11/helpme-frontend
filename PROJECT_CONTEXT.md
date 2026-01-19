@@ -34,6 +34,7 @@ The frontend does NOT handle:
 ---
 
 ## Directory Responsibilities (Strict Boundaries)
+- When creating folders/ files, please use camelCase only
 
 - `miniprogram/app.ts`
   - Application lifecycle only
@@ -75,6 +76,8 @@ The frontend does NOT handle:
 | `/pages/login/login` | Phone authorization, login flow | No |
 | `/pages/device/device` | Device/button management | Yes (index 0) |
 | `/pages/profile/profile` | User profile, settings | Yes (index 1) |
+| `/pages/userinfo/userinfo` | Edit user info (nickname, phone) | No |
+| `/pages/emergencyContacts/emergencyContacts` | Emergency contacts CRUD | No |
 | `/pages/index/index` | Legacy/unused | No |
 | `/pages/logs/logs` | Template/unused | No |
 
@@ -164,8 +167,13 @@ Backend BFF: `http://127.0.0.1:3000` (dev)
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
 | `/api/user/login` | POST | Login with WeChat code + encrypted phone data |
+| `/api/user/emergency-contacts` | GET | Get emergency contacts list |
+| `/api/user/emergency-contacts` | POST | Add emergency contact |
+| `/api/user/emergency-contacts` | PUT | Update emergency contact |
+| `/api/user/emergency-contacts` | DELETE | Delete emergency contact |
 
-Request body for login:
+### Login
+Request:
 ```json
 {
   "code": "wx.login code",
@@ -182,6 +190,50 @@ Response:
     "token": "jwt_token",
     "user": { "nickname": "...", "phone": "..." }
   }
+}
+```
+
+### Emergency Contacts
+
+GET Response:
+```json
+{
+  "code": 0,
+  "data": [
+    {
+      "id": "string",
+      "displayName": "string",
+      "countryCode": "string",
+      "phoneNumber": "string",
+      "position": 0
+    }
+  ]
+}
+```
+
+POST Request:
+```json
+{
+  "name": "string",
+  "countryCode": "string",
+  "phoneNumber": "string"
+}
+```
+
+PUT Request:
+```json
+{
+  "id": "string",
+  "name": "string",
+  "countryCode": "string",
+  "phoneNumber": "string"
+}
+```
+
+DELETE Request:
+```json
+{
+  "id": "string"
 }
 ```
 

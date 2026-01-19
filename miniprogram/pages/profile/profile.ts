@@ -27,8 +27,12 @@ Page({
   },
 
   onPhoneTap() {
-    console.log('我的手机号')
     wx.navigateTo({ url: '/pages/userinfo/userinfo' })
+  },
+
+  onEmergencyContactsTap() {
+    console.log('紧急联系人')
+    wx.navigateTo({ url: '/pages/emergencyContacts/emergencyContacts' })
   },
 
   onAboutTap() {
