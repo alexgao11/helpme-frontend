@@ -2,6 +2,7 @@
   "pages": [
     "pages/device/device",
     "pages/profile/profile",
+    "pages/userinfo/userinfo",
     "pages/index/index",
     "pages/login/login"
   ],

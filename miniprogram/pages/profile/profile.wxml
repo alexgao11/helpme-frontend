@@ -8,8 +8,8 @@
       </view>
     </view>
     <view class="user-info">
-      <view class="user-name">微信用户</view>
-      <view class="user-phone">04xx xxx xxx</view>
+      <view class="user-name">{{nickname}}</view>
+      <view class="user-phone">{{phoneDisplay}}</view>
     </view>
   </view>
 
@@ -18,7 +18,7 @@
     <view class="menu-item" bindtap="onPhoneTap">
       <view class="menu-label">我的手机号</view>
       <view class="menu-right">
-        <text class="menu-value">04xx xxx xxx</text>
+        <text class="menu-value">{{phoneDisplay}}</text>
         <text class="menu-arrow">></text>
       </view>
     </view>

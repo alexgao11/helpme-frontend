@@ -8,6 +8,8 @@ const TOKEN_EXPIRE_DURATION = 7 * 24 * 60 * 60 * 1000
 export interface UserInfo {
   nickname: string
   phone: string
+  countryCode?: string
+  phoneNumber?: string
   [key: string]: any
 }
 
