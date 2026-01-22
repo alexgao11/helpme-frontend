@@ -1,0 +1,17 @@
+<view class="page-container">
+  <view class="card">
+    <view class="title">分享信息</view>
+    <view class="row">
+      <text class="label">分享人用户ID</text>
+      <text class="value">{{fromId || '-'}}</text>
+    </view>
+    <view class="row">
+      <text class="label">设备ID</text>
+      <text class="value">{{deviceId || '-'}}</text>
+    </view>
+    <view class="row">
+      <text class="label">设备名称</text>
+      <text class="value">{{deviceName || '-'}}</text>
+    </view>
+  </view>
+</view>

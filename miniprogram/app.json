@@ -2,6 +2,7 @@
   "pages": [
     "pages/device/device",
     "pages/deviceDetail/deviceDetail",
+    "pages/shareReceive/shareReceive",
     "pages/profile/profile",
     "pages/userinfo/userinfo",
     "pages/emergencyContacts/emergencyContacts",

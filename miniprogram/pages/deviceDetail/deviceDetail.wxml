@@ -15,10 +15,18 @@
     </view>
 
     <!-- 分享按钮 -->
-    <button class="share-btn" bindtap="onShareToFamily">
+    <button class="share-btn" wx:if="{{canShare}}" open-type="share">
       <image src="/assets/icons/share.svg" mode="aspectFit" class="share-icon" />
       <text>分享给家人</text>
     </button>
+    <button class="share-btn" wx:else bindtap="onShareToFamily">
+      <image src="/assets/icons/share.svg" mode="aspectFit" class="share-icon" />
+      <text>分享给家人</text>
+    </button>
+
+    <view class="share-notice" wx:if="{{shareNotice}}">
+      <text>{{shareNotice}}</text>
+    </view>
 
     <!-- 已分享用户 -->
     <view class="shared-users-section">
@@ -46,9 +54,9 @@
 
 <view class="page-container">
   <scroll-view class="detail-scroll" scroll-y wx:if="{{!detailScrollReady || detailScrollable}}">
-    <template is="detailContent" data="{{device: device}}" />
+    <template is="detailContent" data="{{device: device, shareNotice: shareNotice, canShare: canShare}}" />
   </scroll-view>
   <view class="detail-scroll" wx:else>
-    <template is="detailContent" data="{{device: device}}" />
+    <template is="detailContent" data="{{device: device, shareNotice: shareNotice, canShare: canShare}}" />
   </view>
 </view>

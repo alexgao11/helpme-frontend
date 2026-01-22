@@ -100,6 +100,16 @@
   margin-right: 12rpx;
 }
 
+.share-notice {
+  background-color: #fff7e6;
+  color: #8a4b08;
+  font-size: 26rpx;
+  padding: 20rpx 24rpx;
+  border-radius: 20rpx;
+  margin-bottom: 24rpx;
+  line-height: 1.5;
+}
+
 .shared-users-section {
   background-color: #ffffff;
   border-radius: 24rpx;
