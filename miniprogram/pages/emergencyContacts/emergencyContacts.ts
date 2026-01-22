@@ -1,6 +1,5 @@
 import { getToken } from '../../utils/auth'
-
-const API_BASE = 'http://192.168.86.156:3000'
+import { API_BASE } from '../../utils/constant'
 
 interface Contact {
   id: string

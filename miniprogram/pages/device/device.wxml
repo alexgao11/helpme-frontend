@@ -1,74 +1,101 @@
 <view class="page-container">
-  <!-- 已连接设备 -->
-  <view class="connected-state" wx:if="{{connectedDevice}}">
-    <view class="connected-icon">
-      <view class="bluetooth-icon connected"></view>
-    </view>
-    <view class="connected-title">已连接</view>
-    <view class="connected-name">{{connectedDevice.name}}</view>
-    <view class="signal-info">信号强度: {{connectedDevice.RSSI}} dBm</view>
-
-    <!-- 收到的消息 -->
-    <view class="message-box" wx:if="{{receivedMessage}}">
-      <view class="message-label">收到消息:</view>
-      <view class="message-content">{{receivedMessage}}</view>
-    </view>
-
-    <!-- 操作按钮 -->
-    <view class="action-buttons">
-      <button class="action-btn" bindtap="onGetInfo" wx:if="{{bleConnected}}">获取信息</button>
-      <button class="disconnect-btn" bindtap="disconnectDevice">断开连接</button>
-    </view>
-  </view>
-
-  <!-- 扫描状态 -->
-  <view class="scan-state" wx:elif="{{isScanning}}">
-    <!-- 雷达扫描动画 -->
-    <view class="radar-container">
-      <view class="radar-circle radar-circle-1"></view>
-      <view class="radar-circle radar-circle-2"></view>
-      <view class="radar-circle radar-circle-3"></view>
-      <view class="radar-circle radar-circle-4"></view>
-      <view class="radar-sweep"></view>
-      <view class="radar-center">
-        <view class="radar-dot"></view>
-      </view>
-    </view>
-    <view class="scan-status">{{scanStatus}}</view>
-
-    <!-- 设备列表 -->
-    <view class="device-list" wx:if="{{deviceList.length > 0}}">
-      <view class="device-list-title">发现 {{deviceList.length}} 个设备</view>
-      <view
-        class="device-item"
-        wx:for="{{deviceList}}"
-        wx:key="deviceId"
-        data-device="{{item}}"
-        bindtap="onSelectDevice"
-      >
-        <view class="device-info">
-          <view class="device-name">{{item.name}}</view>
-          <view class="device-signal">信号: {{item.RSSI}} dBm</view>
+  <!-- 设备详情视图（有设备时显示） -->
+  <view class="device-detail" wx:if="{{device}}">
+    <!-- 设备信息卡片 -->
+    <view class="device-card">
+      <view class="device-header">
+        <view class="device-name">{{device.name}}</view>
+        <view class="edit-icon" bindtap="onEditDevice">
+          <image src="/assets/icons/edit.svg" mode="aspectFit" class="edit-image" />
         </view>
-        <view class="device-connect-text">点击连接</view>
+      </view>
+      <view class="device-status">
+        <view class="status-dot {{device.status === 'normal' ? 'status-normal' : 'status-alarm'}}"></view>
+        <text class="status-text">当前警报数{{device.currentAlarms}}，总警报数{{device.totalAlarms}}</text>
       </view>
     </view>
 
-    <button class="cancel-btn" bindtap="onAddButton">取消扫描</button>
+    <!-- 分享按钮 -->
+    <button class="share-btn" bindtap="onShareToFamily">
+      <image src="/assets/icons/share.svg" mode="aspectFit" class="share-icon" />
+      <text>分享给家人</text>
+    </button>
+
+    <!-- 已分享用户 -->
+    <view class="shared-users-section">
+      <view class="section-title">已分享用户</view>
+      <view class="user-list">
+        <view class="user-item" wx:for="{{sharedUsers}}" wx:key="id">
+          <view class="user-avatar">{{item.name[0]}}</view>
+          <view class="user-name">{{item.name}}</view>
+          <view class="user-tag" wx:if="{{item.isOwner}}">所有者</view>
+          <view class="remove-btn" wx:else bindtap="onRemoveUser" data-id="{{item.id}}">×</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 删除设备 -->
+    <view class="delete-section">
+      <view class="delete-btn" bindtap="onDeleteDevice">删除设备</view>
+      <view class="delete-hint">删除后该设备将无法再触发你的通知</view>
+    </view>
   </view>
 
-  <!-- 空状态 -->
-  <view class="empty-state" wx:else>
-    <view class="empty-icon">
-      <view class="icon-grid">
-        <view class="grid-item"></view>
-        <view class="grid-item"></view>
-        <view class="grid-item"></view>
-        <view class="grid-item"></view>
+  <!-- 设备配置视图（无设备时显示） -->
+  <view class="config-view" wx:else>
+    <!-- 配置表单 -->
+    <view class="config-form" wx:if="{{configStep === 'idle' || configStep === 'error'}}">
+      <view class="form-title">设备配置</view>
+      <view class="form-desc">输入 WiFi 信息以配置设备</view>
+
+      <view class="input-group">
+        <view class="input-label">WiFi 名称</view>
+        <input
+          class="input-field"
+          placeholder="请输入 WiFi 名称"
+          value="{{ssid}}"
+          bindinput="onSsidInput"
+        />
       </view>
+
+      <view class="input-group">
+        <view class="input-label">WiFi 密码</view>
+        <input
+          class="input-field"
+          placeholder="请输入 WiFi 密码"
+          password="{{true}}"
+          value="{{password}}"
+          bindinput="onPasswordInput"
+        />
+      </view>
+
+      <view class="error-text" wx:if="{{configStep === 'error'}}">{{statusText}}</view>
+
+      <button class="start-btn" bindtap="onStartConfig">开始配置</button>
     </view>
-    <view class="empty-title">还没有绑定设备</view>
-    <view class="empty-desc">绑定外部设备后，可在紧急情况一键触发通知</view>
-    <button class="add-btn" bindtap="onAddButton">添加设备</button>
+
+    <!-- 配置进行中 -->
+    <view class="progress-state" wx:elif="{{configStep !== 'done'}}">
+      <view class="loading-container">
+        <view class="loading-spinner"></view>
+      </view>
+      <view class="progress-status">{{statusText}}</view>
+      <button class="cancel-btn" bindtap="onReset">取消</button>
+    </view>
+
+    <!-- 配置完成 -->
+    <view class="done-state" wx:else>
+      <view class="done-icon">
+        <view class="checkmark"></view>
+      </view>
+      <view class="done-title">配置完成</view>
+
+      <view class="result-box" wx:if="{{resultMessage}}">
+        <view class="result-label">设备返回信息:</view>
+        <view class="result-content">{{resultMessage}}</view>
+      </view>
+
+      <button class="reset-btn" bindtap="onReset">重新配置</button>
+    </view>
   </view>
 </view>

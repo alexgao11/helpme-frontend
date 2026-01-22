@@ -1,4 +1,5 @@
 import { setToken, setUserInfo } from '../../utils/auth'
+import { API_BASE } from '../../utils/constant'
 
 Page({
   data: {},
@@ -37,7 +38,7 @@ Page({
       // 调用登录API
       const response = await new Promise<{ token: string; user: any  }>((resolve, reject) => {
         wx.request({
-          url: 'http://192.168.86.156:3000/api/user/login',
+          url: `${API_BASE}/api/user/login`,
           method: 'POST',
           data: {
             code: loginRes.code,

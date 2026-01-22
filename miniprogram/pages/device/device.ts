@@ -4,173 +4,194 @@ interface BluetoothDevice {
   RSSI: number
 }
 
-// 目标 Service 和 Characteristic UUID（与脚本一致）
-const TARGET_SERVICE_UUID = '12345678-1234-1234-1234-123456789ABC'
-const TARGET_CHARACTERISTIC_UUID = '87654321-4321-4321-4321-CBA987654321'
+interface DeviceInfo {
+  id: string
+  name: string
+  location: string
+  currentAlarms: number
+  totalAlarms: number
+  status: 'normal' | 'alarm'
+}
+
+interface SharedUser {
+  id: string
+  name: string
+  isOwner: boolean
+}
+
+// 目标设备名称
+const TARGET_DEVICE_NAME = 'Xiao_Alarm_Config'
+
+// 配置步骤
+type ConfigStep = 'idle' | 'scanning' | 'connecting' | 'sending_wifi' | 'sending_getinfo' | 'done' | 'error'
+
+// 默认设备数据（API 未就绪时使用）
+const DEFAULT_DEVICE: DeviceInfo = {
+  id: 'default-001',
+  name: '警报器',
+  location: '客厅',
+  currentAlarms: 0,
+  totalAlarms: 10,
+  status: 'normal'
+}
+
+const DEFAULT_SHARED_USERS: SharedUser[] = [
+  { id: '1', name: '张三', isOwner: true },
+  { id: '2', name: '李四', isOwner: false }
+]
 
 Page({
   data: {
-    isScanning: false,
-    scanStatus: '点击添加设备开始扫描',
+    // 设备数据
+    device: DEFAULT_DEVICE as DeviceInfo | null,
+    sharedUsers: DEFAULT_SHARED_USERS as SharedUser[],
+
+    // WiFi 配置
+    ssid: '',
+    password: '',
+
+    // 配置状态
+    configStep: 'idle' as ConfigStep,
+    statusText: '',
+    resultMessage: '',
+
+    // 设备信息
     connectedDevice: null as BluetoothDevice | null,
-    deviceList: [] as BluetoothDevice[],
-    // BLE 连接信息
-    bleConnected: false,
+
+    // BLE 连接信息（内部使用）
     bleServiceId: '',
     bleCharacteristicId: '',
-    receivedMessage: '',
   },
 
   onShow() {
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 0 })
     }
+    this.updateNavTitle()
+  },
+
+  updateNavTitle() {
+    const { device } = this.data
+    wx.setNavigationBarTitle({
+      title: device ? device.name : '设备配置'
+    })
   },
 
   onUnload() {
-    // 页面卸载时清理蓝牙
     this.cleanupBluetooth()
   },
 
-  onAddButton() {
-    if (this.data.isScanning) {
-      this.stopScan()
-    } else {
-      this.startScan()
+  // 输入框绑定
+  onSsidInput(e: WechatMiniprogram.Input) {
+    this.setData({ ssid: e.detail.value })
+  },
+
+  onPasswordInput(e: WechatMiniprogram.Input) {
+    this.setData({ password: e.detail.value })
+  },
+
+  // 开始配置
+  onStartConfig() {
+    const { ssid, password } = this.data
+
+    if (!ssid.trim()) {
+      wx.showToast({ title: '请输入 WiFi 名称', icon: 'none' })
+      return
     }
-  },
 
-  // 清理蓝牙资源
-  cleanupBluetooth() {
-    wx.offBluetoothDeviceFound(() => {
-      console.log('结束')
-    })
-    wx.offBluetoothAdapterStateChange(() => {})
-    wx.stopBluetoothDevicesDiscovery()
-    wx.closeBluetoothAdapter()
-  },
+    if (!password.trim()) {
+      wx.showToast({ title: '请输入 WiFi 密码', icon: 'none' })
+      return
+    }
 
-  // 开始扫描
-  startScan() {
     this.setData({
-      isScanning: true,
-      scanStatus: '正在初始化蓝牙...',
-      deviceList: []
+      configStep: 'scanning',
+      statusText: '正在搜索设备...',
+      resultMessage: ''
     })
 
-    // 初始化蓝牙适配器
+    this.initBluetooth()
+  },
+
+  // 初始化蓝牙
+  initBluetooth() {
     wx.openBluetoothAdapter({
       mode: 'central',
       success: () => {
-        this.setData({ scanStatus: '正在扫描设备...' })
-        this.startDiscovery()
+        this.startScan()
       },
       fail: (err) => {
         console.error('蓝牙初始化失败', err)
         if (err.errCode === 10001) {
-          // 蓝牙未开启，监听蓝牙状态变化
-          this.setData({ scanStatus: '请打开蓝牙' })
+          this.setData({
+            statusText: '请打开蓝牙后重试'
+          })
+          // 监听蓝牙开启
           wx.onBluetoothAdapterStateChange((res) => {
-            if (res.available) {
-              this.setData({ scanStatus: '正在扫描设备...' })
-              this.startDiscovery()
+            if (res.available && this.data.configStep === 'scanning') {
+              this.startScan()
             }
           })
         } else if (err.errMsg?.includes('already opened')) {
-          // 蓝牙适配器已打开，直接开始扫描
-          this.setData({ scanStatus: '正在扫描设备...' })
-          this.startDiscovery()
+          this.startScan()
         } else {
-          this.setData({
-            isScanning: false,
-            scanStatus: '蓝牙初始化失败'
-          })
-          wx.showToast({
-            title: '蓝牙初始化失败',
-            icon: 'none'
-          })
+          this.onConfigError('蓝牙初始化失败')
         }
       }
     })
   },
 
-  // 开始搜索设备
-  startDiscovery() {
-    // 先移除之前的监听，避免重复
-    wx.offBluetoothDeviceFound(() => {
-      console.log('结束')
-    })
+  // 开始扫描
+  startScan() {
+    this.setData({ statusText: `正在搜索 ${TARGET_DEVICE_NAME}...` })
 
-    // 监听设备发现事件
+    wx.offBluetoothDeviceFound(() => {})
+
     wx.onBluetoothDeviceFound((res) => {
-      res.devices.forEach((device) => {
-        // 调试：打印所有发现的设备
-        console.log('发现设备:', {
-          deviceId: device.deviceId,
-          name: device.name,
-          localName: device.localName,
-          RSSI: device.RSSI,
-          advertisServiceUUIDs: device.advertisServiceUUIDs
-        })
-
-        // 只显示有名称的设备
+      for (const device of res.devices) {
         const deviceName = device.name || device.localName
-        if (!deviceName) return
+        console.log('发现设备:', deviceName)
 
-        // 检查是否已存在
-        const existIndex = this.data.deviceList.findIndex(d => d.deviceId === device.deviceId)
-        const newDevice: BluetoothDevice = {
-          deviceId: device.deviceId,
-          name: deviceName,
-          RSSI: device.RSSI
-        }
+        // 找到目标设备
+        if (deviceName === TARGET_DEVICE_NAME) {
+          console.log('找到目标设备:', device)
+          wx.stopBluetoothDevicesDiscovery()
+          wx.offBluetoothDeviceFound(() => {})
 
-        if (existIndex === -1) {
-          // 新设备，添加到列表
+          const targetDevice: BluetoothDevice = {
+            deviceId: device.deviceId,
+            name: deviceName,
+            RSSI: device.RSSI
+          }
+
           this.setData({
-            deviceList: [...this.data.deviceList, newDevice]
+            configStep: 'connecting',
+            statusText: '正在连接设备...',
+            connectedDevice: targetDevice
           })
-        } else {
-          // 已存在，更新信号强度
-          const deviceList = [...this.data.deviceList]
-          deviceList[existIndex] = newDevice
-          this.setData({ deviceList })
-        }
-      })
-    })
 
-    // 开始扫描
-    wx.startBluetoothDevicesDiscovery({
-      allowDuplicatesKey: true, // 允许重复上报以更新信号强度
-      success: () => {
-        console.log('开始扫描蓝牙设备')
-      },
-      fail: (err) => {
-        console.error('扫描失败', err)
-        this.setData({
-          isScanning: false,
-          scanStatus: '扫描失败，请重试'
-        })
+          this.connectDevice(targetDevice)
+          return
+        }
       }
     })
-  },
 
-  // 选择设备并连接
-  onSelectDevice(e: WechatMiniprogram.TouchEvent) {
-    const device = e.currentTarget.dataset.device as BluetoothDevice
-    if (!device) return
-
-    // 停止扫描
-    wx.stopBluetoothDevicesDiscovery()
-    wx.offBluetoothDeviceFound(() => {
-      console.log('结束')
+    wx.startBluetoothDevicesDiscovery({
+      allowDuplicatesKey: false,
+      success: () => {
+        console.log('开始扫描')
+        // 设置超时
+        setTimeout(() => {
+          if (this.data.configStep === 'scanning') {
+            wx.stopBluetoothDevicesDiscovery()
+            this.onConfigError('未找到设备，请确保设备已开启')
+          }
+        }, 15000) // 15秒超时
+      },
+      fail: () => {
+        this.onConfigError('扫描失败')
+      }
     })
-
-    this.setData({
-      scanStatus: `正在连接 ${device.name}...`
-    })
-
-    this.connectDevice(device)
   },
 
   // 连接设备
@@ -179,29 +200,14 @@ Page({
       deviceId: device.deviceId,
       success: () => {
         console.log('连接成功')
-        this.setData({
-          isScanning: false,
-          scanStatus: '连接成功！',
-          connectedDevice: device,
-          deviceList: []
-        })
-        wx.showToast({
-          title: '设备连接成功',
-          icon: 'success'
-        })
-        // 获取设备服务
-        this.getDeviceServices(device.deviceId)
+        // 延迟获取服务，等待连接稳定
+        setTimeout(() => {
+          this.getDeviceServices(device.deviceId)
+        }, 500)
       },
       fail: (err) => {
         console.error('连接失败', err)
-        this.setData({
-          isScanning: false,
-          scanStatus: '连接失败，请重试'
-        })
-        wx.showToast({
-          title: '连接失败',
-          icon: 'none'
-        })
+        this.onConfigError('连接设备失败')
       }
     })
   },
@@ -211,22 +217,24 @@ Page({
     wx.getBLEDeviceServices({
       deviceId,
       success: (res) => {
-        console.log('设备服务列表', res.services)
+        console.log('服务列表:', res.services)
 
-        // 查找目标服务
-        const targetService = res.services.find(s =>
-          s.uuid.toUpperCase() === TARGET_SERVICE_UUID.toUpperCase()
-        )
+        // 通常第一个自定义服务就是我们需要的
+        // 过滤掉标准服务（以 0000 开头的通常是标准服务）
+        const customService = res.services.find(s =>
+          !s.uuid.toUpperCase().startsWith('0000')
+        ) || res.services[0]
 
-        if (targetService) {
-          console.log('找到目标服务:', targetService.uuid)
-          this.getCharacteristics(deviceId, targetService.uuid)
+        if (customService) {
+          console.log('使用服务:', customService.uuid)
+          this.getCharacteristics(deviceId, customService.uuid)
         } else {
-          console.log('未找到目标服务，可用服务:', res.services.map(s => s.uuid))
+          this.onConfigError('未找到可用服务')
         }
       },
       fail: (err) => {
         console.error('获取服务失败', err)
+        this.onConfigError('获取设备服务失败')
       }
     })
   },
@@ -237,29 +245,40 @@ Page({
       deviceId,
       serviceId,
       success: (res) => {
-        console.log('特征值列表', res.characteristics)
+        console.log('特征值列表:', res.characteristics)
 
-        // 查找目标特征值
-        const targetChar = res.characteristics.find(c =>
-          c.uuid.toUpperCase() === TARGET_CHARACTERISTIC_UUID.toUpperCase()
+        // 找到可写入的特征值
+        const writableChar = res.characteristics.find(c =>
+          c.properties.write
         )
 
-        if (targetChar) {
-          console.log('找到目标特征值:', targetChar.uuid)
-          // 先订阅通知，再读取数据
-          this.enableNotify(deviceId, serviceId, targetChar.uuid)
+        if (writableChar) {
+          console.log('使用特征值:', writableChar.uuid)
+          this.setData({
+            bleServiceId: serviceId,
+            bleCharacteristicId: writableChar.uuid
+          })
+
+          // 开启通知（如果支持）
+          if (writableChar.properties.notify || writableChar.properties.indicate) {
+            this.enableNotifyAndSendWifi(deviceId, serviceId, writableChar.uuid)
+          } else {
+            // 不支持通知，直接发送
+            this.sendWifiConfig()
+          }
         } else {
-          console.log('未找到目标特征值')
+          this.onConfigError('未找到可写入的特征值')
         }
       },
       fail: (err) => {
         console.error('获取特征值失败', err)
+        this.onConfigError('获取特征值失败')
       }
     })
   },
 
-  // 开启通知
-  enableNotify(deviceId: string, serviceId: string, characteristicId: string) {
+  // 开启通知并发送 WiFi 配置
+  enableNotifyAndSendWifi(deviceId: string, serviceId: string, characteristicId: string) {
     wx.notifyBLECharacteristicValueChange({
       deviceId,
       serviceId,
@@ -268,107 +287,128 @@ Page({
       success: () => {
         console.log('通知已开启')
 
-        // 保存连接信息
-        this.setData({
-          bleConnected: true,
-          bleServiceId: serviceId,
-          bleCharacteristicId: characteristicId
-        })
-
-        // 监听特征值变化
+        // 监听设备返回的数据
         wx.onBLECharacteristicValueChange((res) => {
           const value = this.arrayBufferToString(res.value)
           console.log('收到数据:', value)
-
-          // 显示收到的消息
-          this.setData({ receivedMessage: value })
-          wx.showToast({
-            title: `收到: ${value}`,
-            icon: 'none',
-            duration: 2000
-          })
-
-          // 如果收到 "1,test"，自动发送 "123|hello"
-          if (value === '1,test') {
-            setTimeout(() => {
-              this.sendMessage('123|hello')
-            }, 500)
-          }
+          this.handleDeviceResponse(value)
         })
 
-        wx.showToast({
-          title: '连接就绪',
-          icon: 'success'
-        })
+        this.sendWifiConfig()
       },
       fail: (err) => {
         console.error('开启通知失败', err)
-        wx.showToast({
-          title: '通知开启失败',
-          icon: 'none'
-        })
+        // 即使通知失败也尝试发送
+        this.sendWifiConfig()
       }
     })
   },
 
-  // 发送 getinfo 命令
-  onGetInfo() {
-    if (!this.data.bleConnected || !this.data.connectedDevice) {
-      wx.showToast({
-        title: '请先连接设备',
-        icon: 'none'
-      })
-      return
-    }
-    this.sendMessage('getinfo')
-  },
+  // 发送 WiFi 配置
+  sendWifiConfig() {
+    const { ssid, password, connectedDevice, bleServiceId, bleCharacteristicId } = this.data
+    if (!connectedDevice) return
 
-  // 发送消息
-  sendMessage(message: string) {
-    const device = this.data.connectedDevice
-    if (!device) return
+    this.setData({
+      configStep: 'sending_wifi',
+      statusText: '正在发送 WiFi 配置...'
+    })
 
+    const message = `${ssid}|${password}`
     const buffer = this.stringToArrayBuffer(message)
+
     wx.writeBLECharacteristicValue({
-      deviceId: device.deviceId,
-      serviceId: this.data.bleServiceId,
-      characteristicId: this.data.bleCharacteristicId,
+      deviceId: connectedDevice.deviceId,
+      serviceId: bleServiceId,
+      characteristicId: bleCharacteristicId,
       value: buffer,
       success: () => {
-        console.log('发送成功:', message)
-        wx.showToast({
-          title: `已发送: ${message}`,
-          icon: 'none'
-        })
+        console.log('WiFi 配置已发送')
+        // 延迟发送 getinfo
+        setTimeout(() => {
+          this.sendGetInfo()
+        }, 1000)
       },
       fail: (err) => {
-        console.error('发送失败', err)
-        wx.showToast({
-          title: '发送失败',
-          icon: 'none'
-        })
+        console.error('发送 WiFi 配置失败', err)
+        this.onConfigError('发送配置失败')
       }
     })
   },
 
-  // 工具函数：ArrayBuffer 转字符串
-  arrayBufferToString(buffer: ArrayBuffer): string {
-    const uint8Array = new Uint8Array(buffer)
-    let str = ''
-    for (let i = 0; i < uint8Array.length; i++) {
-      str += String.fromCharCode(uint8Array[i])
-    }
-    return str
+  // 发送 getinfo
+  sendGetInfo() {
+    const { connectedDevice, bleServiceId, bleCharacteristicId } = this.data
+    if (!connectedDevice) return
+
+    this.setData({
+      configStep: 'sending_getinfo',
+      statusText: '正在获取设备信息...'
+    })
+
+    const buffer = this.stringToArrayBuffer('getinfo')
+
+    wx.writeBLECharacteristicValue({
+      deviceId: connectedDevice.deviceId,
+      serviceId: bleServiceId,
+      characteristicId: bleCharacteristicId,
+      value: buffer,
+      success: () => {
+        console.log('getinfo 已发送')
+        // 设置超时，如果没有收到响应
+        setTimeout(() => {
+          if (this.data.configStep === 'sending_getinfo') {
+            this.onConfigComplete('配置完成（未收到设备响应）')
+          }
+        }, 5000)
+      },
+      fail: (err) => {
+        console.error('发送 getinfo 失败', err)
+        this.onConfigError('获取设备信息失败')
+      }
+    })
   },
 
-  // 工具函数：字符串转 ArrayBuffer
-  stringToArrayBuffer(str: string): ArrayBuffer {
-    const buffer = new ArrayBuffer(str.length)
-    const uint8Array = new Uint8Array(buffer)
-    for (let i = 0; i < str.length; i++) {
-      uint8Array[i] = str.charCodeAt(i)
+  // 处理设备响应
+  handleDeviceResponse(value: string) {
+    console.log('处理响应:', value, '当前步骤:', this.data.configStep)
+
+    if (this.data.configStep === 'sending_getinfo') {
+      // 收到 getinfo 的响应
+      this.onConfigComplete(value)
     }
-    return buffer
+  },
+
+  // 配置完成
+  onConfigComplete(result: string) {
+    this.setData({
+      configStep: 'done',
+      statusText: '配置完成',
+      resultMessage: result
+    })
+
+    // 断开连接
+    this.disconnectDevice()
+
+    wx.showToast({
+      title: '配置成功',
+      icon: 'success'
+    })
+  },
+
+  // 配置出错
+  onConfigError(message: string) {
+    this.setData({
+      configStep: 'error',
+      statusText: message
+    })
+
+    this.cleanupBluetooth()
+
+    wx.showToast({
+      title: message,
+      icon: 'none'
+    })
   },
 
   // 断开设备连接
@@ -379,36 +419,98 @@ Page({
     wx.closeBLEConnection({
       deviceId: device.deviceId,
       complete: () => {
-        // 移除监听
-        wx.offBluetoothDeviceFound(() => {})
-        wx.offBluetoothAdapterStateChange(() => {})
-        wx.offBLECharacteristicValueChange(() => {})
-        wx.stopBluetoothDevicesDiscovery()
-
+        this.cleanupBluetooth()
         this.setData({
           connectedDevice: null,
-          scanStatus: '点击添加设备开始扫描',
-          deviceList: [],
-          bleConnected: false,
           bleServiceId: '',
-          bleCharacteristicId: '',
-          receivedMessage: ''
-        })
-        wx.showToast({
-          title: '已断开连接',
-          icon: 'none'
+          bleCharacteristicId: ''
         })
       }
     })
   },
 
-  // 停止扫描
-  stopScan() {
+  // 清理蓝牙资源
+  cleanupBluetooth() {
+    wx.offBluetoothDeviceFound(() => {})
+    wx.offBluetoothAdapterStateChange(() => {})
+    wx.offBLECharacteristicValueChange(() => {})
+    wx.stopBluetoothDevicesDiscovery()
+    wx.closeBluetoothAdapter()
+  },
+
+  // 重新开始
+  onReset() {
     this.cleanupBluetooth()
     this.setData({
-      isScanning: false,
-      scanStatus: '点击添加设备开始扫描',
-      deviceList: []
+      configStep: 'idle',
+      statusText: '',
+      resultMessage: '',
+      connectedDevice: null,
+      bleServiceId: '',
+      bleCharacteristicId: ''
     })
+  },
+
+  // 工具函数
+  arrayBufferToString(buffer: ArrayBuffer): string {
+    const uint8Array = new Uint8Array(buffer)
+    let str = ''
+    for (let i = 0; i < uint8Array.length; i++) {
+      str += String.fromCharCode(uint8Array[i])
+    }
+    return str
+  },
+
+  stringToArrayBuffer(str: string): ArrayBuffer {
+    const buffer = new ArrayBuffer(str.length)
+    const uint8Array = new Uint8Array(buffer)
+    for (let i = 0; i < str.length; i++) {
+      uint8Array[i] = str.charCodeAt(i)
+    }
+    return buffer
+  },
+
+  // 设备详情页相关方法
+  onShareToFamily() {
+    wx.showToast({ title: '分享功能开发中', icon: 'none' })
+  },
+
+  onRemoveUser(e: WechatMiniprogram.TouchEvent) {
+    const userId = e.currentTarget.dataset.id
+    const user = this.data.sharedUsers.find(u => u.id === userId)
+    if (user?.isOwner) {
+      wx.showToast({ title: '无法移除所有者', icon: 'none' })
+      return
+    }
+    wx.showModal({
+      title: '确认移除',
+      content: `确定要移除 ${user?.name} 吗？`,
+      success: (res) => {
+        if (res.confirm) {
+          const newUsers = this.data.sharedUsers.filter(u => u.id !== userId)
+          this.setData({ sharedUsers: newUsers })
+        }
+      }
+    })
+  },
+
+  onDeleteDevice() {
+    wx.showModal({
+      title: '删除设备',
+      content: '删除后该设备将无法再触发你的通知',
+      confirmColor: '#FF3B30',
+      success: (res) => {
+        if (res.confirm) {
+          // TODO: 调用 API 删除设备
+          this.setData({ device: null })
+          this.updateNavTitle()
+          wx.showToast({ title: '设备已删除', icon: 'success' })
+        }
+      }
+    })
+  },
+
+  onEditDevice() {
+    wx.showToast({ title: '编辑功能开发中', icon: 'none' })
   }
 })

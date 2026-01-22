@@ -103,10 +103,17 @@ class BLEPeripheral: NSObject, CBPeripheralManagerDelegate {
 
                 // 处理不同的命令
                 if message == "getinfo" {
-                    print("  处理 getinfo 命令，发送响应: 1,test")
-                    sendNotification("1,test")
+                    print("  处理 getinfo 命令")
+                    sendNotification("device_id:ABC123,status:ok,version:1.0.0")
+                } else if message.contains("|") {
+                    // WiFi 配置: ssid|password
+                    let parts = message.split(separator: "|")
+                    if parts.count >= 2 {
+                        print("  收到 WiFi 配置:")
+                        print("    SSID: \(parts[0])")
+                        print("    Password: \(parts[1])")
+                    }
                 } else {
-                    // 其他消息直接打印
                     print("  已收到: \(message)")
                 }
             }

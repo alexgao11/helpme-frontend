@@ -1,4 +1,5 @@
 import { getUserInfo, setUserInfo, getToken } from '../../utils/auth'
+import { API_BASE } from '../../utils/constant'
 
 Page({
   data: {
@@ -43,7 +44,7 @@ Page({
 
     const token = getToken()
     wx.request({
-      url: 'http://192.168.86.156:3000/api/user/me',
+      url: `${API_BASE}/api/user/me`,
       method: 'PUT',
       header: {
         'Authorization': `Bearer ${token}`,
