@@ -1,4 +1,5 @@
-import { getUserInfo, isLoggedIn } from '../../utils/auth';
+import { getToken, getUserInfo, isLoggedIn } from '../../utils/auth';
+import { API_BASE } from '../../utils/constant';
 
 interface ApiDevice {
   id: string;
@@ -10,6 +11,11 @@ interface ApiDevice {
   activeAlarmCount: number;
 }
 
+interface EditDeviceForm {
+  name: string;
+  location: string;
+}
+
 Page({
   data: {
     device: null as ApiDevice | null,
@@ -17,6 +23,12 @@ Page({
     detailScrollReady: false,
     shareNotice: '',
     canShare: false,
+    showEditModal: false,
+    isUpdatingDevice: false,
+    editingDevice: {
+      name: '',
+      location: '',
+    } as EditDeviceForm,
   },
 
   onLoad(options: Record<string, string>) {
@@ -73,6 +85,42 @@ Page({
     if (this.data.device) {
       this.updateScrollState();
     }
+    this.fetchDeviceDetail();
+  },
+
+  fetchDeviceDetail() {
+    const deviceId = this.data.device?.id;
+    if (!deviceId) return;
+    const token = getToken();
+    if (!token) return;
+
+    wx.request({
+      url: `${API_BASE}/api/devices/${deviceId}`,
+      method: 'GET',
+      header: {
+        Authorization: `Bearer ${token}`,
+      },
+      success: (res: WechatMiniprogram.RequestSuccessCallbackResult) => {
+        if (res.statusCode === 200 && res.data) {
+          const device = res.data as ApiDevice;
+          const normalizedDevice = {
+            ...device,
+            sharedTo: Array.isArray(device.sharedTo) ? device.sharedTo : [],
+          };
+          this.setData({ device: normalizedDevice }, () => {
+            this.updateScrollState();
+          });
+          wx.setNavigationBarTitle({
+            title: normalizedDevice?.name || '设备详情',
+          });
+        } else {
+          wx.showToast({ title: '设备加载失败', icon: 'none' });
+        }
+      },
+      fail: () => {
+        wx.showToast({ title: '设备加载失败', icon: 'none' });
+      },
+    });
   },
 
   updateScrollState() {
@@ -179,6 +227,86 @@ Page({
   },
 
   onEditDevice() {
-    wx.showToast({ title: '编辑功能开发中', icon: 'none' });
+    const device = this.data.device;
+    if (!device) return;
+    this.setData({
+      showEditModal: true,
+      editingDevice: {
+        name: device.name || '',
+        location: device.location || '',
+      },
+    });
+  },
+
+  onEditModalClose() {
+    if (this.data.isUpdatingDevice) return;
+    this.setData({ showEditModal: false });
+  },
+
+  onEditNameInput(e: WechatMiniprogram.Input) {
+    this.setData({ 'editingDevice.name': e.detail.value });
+  },
+
+  onEditLocationInput(e: WechatMiniprogram.Input) {
+    this.setData({ 'editingDevice.location': e.detail.value });
+  },
+
+  onEditModalConfirm() {
+    const device = this.data.device;
+    if (!device) return;
+    const name = this.data.editingDevice.name.trim();
+    const location = this.data.editingDevice.location.trim();
+
+    if (!name) {
+      wx.showToast({ title: '请输入设备名称', icon: 'none' });
+      return;
+    }
+    if (!location) {
+      wx.showToast({ title: '请输入设备位置', icon: 'none' });
+      return;
+    }
+
+    const token = getToken();
+    if (!token) {
+      wx.showToast({ title: '请先登录', icon: 'none' });
+      return;
+    }
+
+    this.setData({ isUpdatingDevice: true });
+    wx.request({
+      url: `${API_BASE}/api/devices/${device.id}`,
+      method: 'PUT',
+      header: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      data: {
+        name,
+        location,
+      },
+      success: (res: WechatMiniprogram.RequestSuccessCallbackResult) => {
+        if (res.statusCode === 200) {
+          const nextDevice = { ...device, name, location };
+          this.setData(
+            { device: nextDevice, showEditModal: false },
+            () => {
+              this.updateScrollState();
+            },
+          );
+          wx.setNavigationBarTitle({
+            title: name || '设备详情',
+          });
+          wx.showToast({ title: '更新成功', icon: 'success' });
+        } else {
+          wx.showToast({ title: '更新失败', icon: 'none' });
+        }
+      },
+      fail: () => {
+        wx.showToast({ title: '更新失败', icon: 'none' });
+      },
+      complete: () => {
+        this.setData({ isUpdatingDevice: false });
+      },
+    });
   },
 });
