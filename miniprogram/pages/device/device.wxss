@@ -257,6 +257,32 @@
   box-sizing: border-box;
 }
 
+.input-with-action {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-field--with-action {
+  padding-right: 88rpx;
+}
+
+.reveal-btn {
+  position: absolute;
+  right: 18rpx;
+  min-width: 0 !important;
+  height: 48rpx;
+  padding: 0 !important;
+  line-height: 48rpx;
+  border-radius: 24rpx;
+  font-size: 22rpx;
+  color: #3478F6;
+  background-color: transparent;
+  border: none;
+  z-index: 3;
+}
+
+
 .error-text {
   color: #FF3B30;
   font-size: 28rpx;

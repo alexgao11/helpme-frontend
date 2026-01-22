@@ -46,13 +46,18 @@
 
           <view class="input-group">
             <view class="input-label">WiFi 密码</view>
-            <input
-              class="input-field"
-              placeholder="请输入 WiFi 密码"
-              password="{{true}}"
-              value="{{password}}"
-              bindinput="onPasswordInput"
-            />
+            <view class="input-with-action">
+              <input
+                class="input-field input-field--with-action"
+                placeholder="请输入 WiFi 密码"
+                password="{{!showPassword}}"
+                value="{{password}}"
+                bindinput="onPasswordInput"
+              />
+              <view class="reveal-btn" bindtap="onTogglePassword">
+                {{showPassword ? '隐藏' : '显示'}}
+              </view>
+            </view>
           </view>
 
           <view class="error-text" wx:if="{{configStep === 'error'}}">{{statusText}}</view>
@@ -74,13 +79,7 @@
             <view class="checkmark"></view>
           </view>
           <view class="done-title">配置完成</view>
-
-          <view class="result-box" wx:if="{{resultMessage}}">
-            <view class="result-label">设备返回信息:</view>
-            <view class="result-content">{{resultMessage}}</view>
-          </view>
-
-          <button class="reset-btn" bindtap="onReset">重新配置</button>
+          <button class="reset-btn" bindtap="onHideConfig">关闭</button>
         </view>
       </view>
     </view>
@@ -91,13 +90,13 @@
   <scroll-view class="page-scroll" scroll-y wx:if="{{!pageScrollReady || pageScrollable}}">
     <template
       is="deviceContent"
-      data="{{devices: devices, isLoading: isLoading, loadError: loadError, showConfig: showConfig, configStep: configStep, ssid: ssid, password: password, statusText: statusText, resultMessage: resultMessage}}"
+      data="{{devices: devices, isLoading: isLoading, loadError: loadError, showConfig: showConfig, configStep: configStep, ssid: ssid, password: password, showPassword: showPassword, statusText: statusText, resultMessage: resultMessage}}"
     />
   </scroll-view>
   <view class="page-scroll" wx:else>
     <template
       is="deviceContent"
-      data="{{devices: devices, isLoading: isLoading, loadError: loadError, showConfig: showConfig, configStep: configStep, ssid: ssid, password: password, statusText: statusText, resultMessage: resultMessage}}"
+      data="{{devices: devices, isLoading: isLoading, loadError: loadError, showConfig: showConfig, configStep: configStep, ssid: ssid, password: password, showPassword: showPassword, statusText: statusText, resultMessage: resultMessage}}"
     />
   </view>
 
