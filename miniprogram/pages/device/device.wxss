@@ -1,50 +1,69 @@
 .page-container {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
   background-color: #f5f5f5;
-  padding-bottom: calc(100rpx + env(safe-area-inset-bottom));
 }
 
-/* ========== 设备详情视图 ========== */
-.device-detail {
-  padding: 24rpx;
+.page-scroll {
+  flex: 1;
+  padding-bottom: calc(124rpx + env(safe-area-inset-bottom));
 }
 
-.device-card {
-  background-color: #ffffff;
-  border-radius: 24rpx;
-  padding: 32rpx;
+.page-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.page-footer {
+  padding: 16rpx 24rpx calc(116rpx + env(safe-area-inset-bottom));
+  background-color: #f5f5f5;
+}
+
+/* ========== 设备列表 ========== */
+.device-list-section {
+  padding: 24rpx 24rpx 0;
+}
+
+.section-title {
+  font-size: 28rpx;
+  color: #999999;
   margin-bottom: 24rpx;
 }
 
-.device-header {
+.loading-text {
+  font-size: 28rpx;
+  color: #666666;
+  padding-bottom: 16rpx;
+}
+
+.device-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.device-item {
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  padding: 28rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.device-item-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16rpx;
 }
 
-.device-name {
-  font-size: 36rpx;
+.device-item-name {
+  font-size: 34rpx;
   font-weight: 600;
   color: #000000;
 }
 
-.edit-icon {
-  width: 48rpx;
-  height: 48rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.edit-image {
-  width: 40rpx;
-  height: 40rpx;
-}
-
-.device-status {
+.device-item-status {
   display: flex;
   align-items: center;
 }
@@ -65,131 +84,144 @@
 }
 
 .status-text {
-  font-size: 28rpx;
+  font-size: 26rpx;
   color: #666666;
 }
 
-/* 分享按钮 */
-.share-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.empty-text {
+  font-size: 28rpx;
+  color: #999999;
+  text-align: center;
+  padding: 40rpx 0 24rpx;
+}
+
+.add-device-btn {
   width: 100%;
-  height: 96rpx;
+  height: 88rpx;
   background-color: #3478F6;
   color: #ffffff;
   font-size: 32rpx;
   font-weight: 500;
-  border-radius: 48rpx;
-  border: none;
-  margin-bottom: 24rpx;
-}
-
-.share-btn::after {
-  border: none;
-}
-
-.share-icon {
-  width: 40rpx;
-  height: 40rpx;
-  margin-right: 12rpx;
-}
-
-/* 已分享用户 */
-.shared-users-section {
-  background-color: #ffffff;
-  border-radius: 24rpx;
-  padding: 32rpx;
-  margin-bottom: 24rpx;
-}
-
-.section-title {
-  font-size: 28rpx;
-  color: #999999;
-  margin-bottom: 24rpx;
-}
-
-.user-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.user-item {
-  display: flex;
-  align-items: center;
-  padding: 16rpx 0;
-}
-
-.user-item:not(:last-child) {
-  border-bottom: 1rpx solid #f0f0f0;
-}
-
-.user-avatar {
-  width: 64rpx;
-  height: 64rpx;
-  border-radius: 50%;
-  background-color: #3478F6;
-  color: #ffffff;
-  font-size: 28rpx;
+  border-radius: 44rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 20rpx;
+  border: none;
 }
 
-.user-name {
-  flex: 1;
-  font-size: 32rpx;
-  color: #000000;
-}
-
-.user-tag {
-  font-size: 24rpx;
-  color: #999999;
-  background-color: #f5f5f5;
-  padding: 8rpx 16rpx;
-  border-radius: 8rpx;
-}
-
-.remove-btn {
-  width: 48rpx;
-  height: 48rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 36rpx;
-  color: #999999;
-}
-
-/* 删除设备 */
-.delete-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 48rpx 0;
-}
-
-.delete-btn {
-  font-size: 32rpx;
-  color: #FF3B30;
-  margin-bottom: 16rpx;
-}
-
-.delete-hint {
-  font-size: 26rpx;
-  color: #999999;
+.add-device-btn::after {
+  border: none;
 }
 
 /* ========== 设备配置视图 ========== */
-.config-view {
-  padding: 0 48rpx;
+.config-overlay {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 24rpx calc(24rpx + env(safe-area-inset-bottom) + 98rpx);
+  background: rgba(18, 30, 52, 0.18);
+  animation: overlay-fade 240ms ease-out;
+  z-index: 20;
+}
+
+.config-panel {
+  width: 100%;
+  max-height: 86vh;
+  overflow: auto;
+  padding: 32rpx 32rpx calc(0rpx + env(safe-area-inset-bottom));
   background-color: #ffffff;
-  min-height: 100vh;
+  border-radius: 28rpx;
+  box-shadow: 0 24rpx 80rpx rgba(18, 30, 52, 0.18);
+  animation: panel-rise 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.config-overlay.is-closing {
+  animation: overlay-fade-out 380ms ease-in forwards;
+}
+
+.config-panel.is-closing {
+  animation: panel-drop 380ms cubic-bezier(0.4, 0, 0.8, 0.2) forwards;
+}
+
+@keyframes overlay-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes overlay-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes panel-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 48rpx, 0) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes panel-drop {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, 130rpx, 0) scale(0.94);
+  }
 }
 
 /* 配置表单 */
-.config-form {
-  padding-top: 120rpx;
+.config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 96rpx;
+  height: 80rpx;
+  padding: 0 16rpx 0 0;
+  font-size: 26rpx;
+  color: #1f2a44;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.collapse-btn::after {
+  border: none;
+}
+
+.collapse-icon {
+  width: 26rpx;
+  height: 26rpx;
+  border-right: 6rpx solid #000000;
+  border-bottom: 6rpx solid #000000;
+  transform: rotate(45deg) translateY(-12rpx);
+  display: block;
 }
 
 .form-title {
@@ -233,7 +265,7 @@
 }
 
 .start-btn {
-  margin-top: 48rpx;
+  margin-top: 28rpx;
   width: 100%;
   height: 96rpx;
   background-color: #3478F6;
@@ -256,7 +288,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 200rpx;
+  padding-top: 120rpx;
 }
 
 .loading-container {
@@ -312,7 +344,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 200rpx;
+  padding-top: 120rpx;
 }
 
 .done-icon {

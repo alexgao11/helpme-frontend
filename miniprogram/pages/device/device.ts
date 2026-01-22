@@ -1,22 +1,20 @@
+import { API_BASE } from '../../utils/constant'
+import { getToken } from '../../utils/auth'
+
 interface BluetoothDevice {
   deviceId: string
   name: string
   RSSI: number
 }
 
-interface DeviceInfo {
+interface ApiDevice {
   id: string
-  name: string
-  location: string
-  currentAlarms: number
-  totalAlarms: number
-  status: 'normal' | 'alarm'
-}
-
-interface SharedUser {
-  id: string
-  name: string
-  isOwner: boolean
+  name: string | null
+  deviceTypeId: number
+  status: number
+  location: string | null
+  sharedTo: Array<{ id: string, name: string }>
+  activeAlarmCount: number
 }
 
 // 目标设备名称
@@ -25,26 +23,17 @@ const TARGET_DEVICE_NAME = 'Xiao_Alarm_Config'
 // 配置步骤
 type ConfigStep = 'idle' | 'scanning' | 'connecting' | 'sending_wifi' | 'sending_getinfo' | 'done' | 'error'
 
-// 默认设备数据（API 未就绪时使用）
-const DEFAULT_DEVICE: DeviceInfo = {
-  id: 'default-001',
-  name: '警报器',
-  location: '客厅',
-  currentAlarms: 0,
-  totalAlarms: 10,
-  status: 'normal'
-}
-
-const DEFAULT_SHARED_USERS: SharedUser[] = [
-  { id: '1', name: '张三', isOwner: true },
-  { id: '2', name: '李四', isOwner: false }
-]
-
 Page({
+  configCloseTimer: undefined as number | undefined,
   data: {
-    // 设备数据
-    device: DEFAULT_DEVICE as DeviceInfo | null,
-    sharedUsers: DEFAULT_SHARED_USERS as SharedUser[],
+    // 设备列表
+    devices: [] as ApiDevice[],
+    isLoading: false,
+    loadError: '',
+    showConfig: false,
+    configClosing: false,
+    pageScrollable: false,
+    pageScrollReady: false,
 
     // WiFi 配置
     ssid: '',
@@ -67,17 +56,15 @@ Page({
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 0 })
     }
-    this.updateNavTitle()
-  },
-
-  updateNavTitle() {
-    const { device } = this.data
-    wx.setNavigationBarTitle({
-      title: device ? device.name : '设备配置'
-    })
+    wx.setNavigationBarTitle({ title: '我的设备' })
+    this.loadDevices()
   },
 
   onUnload() {
+    if (this.configCloseTimer) {
+      clearTimeout(this.configCloseTimer)
+      this.configCloseTimer = undefined
+    }
     this.cleanupBluetooth()
   },
 
@@ -88,6 +75,99 @@ Page({
 
   onPasswordInput(e: WechatMiniprogram.Input) {
     this.setData({ password: e.detail.value })
+  },
+
+  // 加载设备列表
+  loadDevices() {
+    const token = getToken()
+    this.setData({ isLoading: true, loadError: '' })
+
+    wx.request({
+      url: `${API_BASE}/api/devices`,
+      method: 'GET',
+      header: token ? { Authorization: `Bearer ${token}` } : {},
+      success: (res) => {
+        if (res.statusCode === 200 && Array.isArray(res.data)) {
+          this.setData({ devices: res.data }, () => {
+            this.updatePageScrollState()
+          })
+        } else {
+          this.setData({ loadError: '设备加载失败' }, () => {
+            this.updatePageScrollState()
+          })
+          wx.showToast({ title: '设备加载失败', icon: 'none' })
+        }
+      },
+      fail: () => {
+        this.setData({ loadError: '网络错误，无法加载设备' }, () => {
+          this.updatePageScrollState()
+        })
+        wx.showToast({ title: '网络错误', icon: 'none' })
+      },
+      complete: () => {
+        this.setData({ isLoading: false }, () => {
+          this.updatePageScrollState()
+        })
+      }
+    })
+  },
+
+  onDeviceTap(e: WechatMiniprogram.TouchEvent) {
+    const index = Number(e.currentTarget.dataset.index)
+    if (Number.isNaN(index)) return
+    const device = this.data.devices[index]
+    if (!device) return
+
+    wx.navigateTo({
+      url: '/pages/deviceDetail/deviceDetail',
+      success: (res) => {
+        res.eventChannel.emit('device', device)
+      }
+    })
+  },
+
+  onShowConfig() {
+    if (this.configCloseTimer) {
+      clearTimeout(this.configCloseTimer)
+      this.configCloseTimer = undefined
+    }
+    this.setData({ showConfig: true, configClosing: false }, () => {
+      this.updatePageScrollState()
+    })
+  },
+
+  onHideConfig() {
+    this.onReset()
+    if (this.data.configClosing) return
+    this.setData({ configClosing: true }, () => {
+      this.configCloseTimer = setTimeout(() => {
+        this.setData({ showConfig: false, configClosing: false }, () => {
+          this.updatePageScrollState()
+        })
+        this.configCloseTimer = undefined
+      }, 380)
+    })
+  },
+
+  updatePageScrollState() {
+    wx.nextTick(() => {
+      const query = wx.createSelectorQuery()
+      query.select('.page-scroll').boundingClientRect()
+      query.select('.page-content').boundingClientRect()
+      query.exec((res) => {
+        const container = res[0] as WechatMiniprogram.BoundingClientRectCallbackResult | undefined
+        const content = res[1] as WechatMiniprogram.BoundingClientRectCallbackResult | undefined
+        if (!container || !content) {
+          this.setData({ pageScrollable: false, pageScrollReady: true })
+          return
+        }
+        const shouldScroll = content.height - container.height > 2
+        this.setData({
+          pageScrollable: shouldScroll,
+          pageScrollReady: true
+        })
+      })
+    })
   },
 
   // 开始配置
@@ -108,6 +188,8 @@ Page({
       configStep: 'scanning',
       statusText: '正在搜索设备...',
       resultMessage: ''
+    }, () => {
+      this.updatePageScrollState()
     })
 
     this.initBluetooth()
@@ -385,6 +467,8 @@ Page({
       configStep: 'done',
       statusText: '配置完成',
       resultMessage: result
+    }, () => {
+      this.updatePageScrollState()
     })
 
     // 断开连接
@@ -401,6 +485,8 @@ Page({
     this.setData({
       configStep: 'error',
       statusText: message
+    }, () => {
+      this.updatePageScrollState()
     })
 
     this.cleanupBluetooth()
@@ -448,6 +534,8 @@ Page({
       connectedDevice: null,
       bleServiceId: '',
       bleCharacteristicId: ''
+    }, () => {
+      this.updatePageScrollState()
     })
   },
 
@@ -468,49 +556,5 @@ Page({
       uint8Array[i] = str.charCodeAt(i)
     }
     return buffer
-  },
-
-  // 设备详情页相关方法
-  onShareToFamily() {
-    wx.showToast({ title: '分享功能开发中', icon: 'none' })
-  },
-
-  onRemoveUser(e: WechatMiniprogram.TouchEvent) {
-    const userId = e.currentTarget.dataset.id
-    const user = this.data.sharedUsers.find(u => u.id === userId)
-    if (user?.isOwner) {
-      wx.showToast({ title: '无法移除所有者', icon: 'none' })
-      return
-    }
-    wx.showModal({
-      title: '确认移除',
-      content: `确定要移除 ${user?.name} 吗？`,
-      success: (res) => {
-        if (res.confirm) {
-          const newUsers = this.data.sharedUsers.filter(u => u.id !== userId)
-          this.setData({ sharedUsers: newUsers })
-        }
-      }
-    })
-  },
-
-  onDeleteDevice() {
-    wx.showModal({
-      title: '删除设备',
-      content: '删除后该设备将无法再触发你的通知',
-      confirmColor: '#FF3B30',
-      success: (res) => {
-        if (res.confirm) {
-          // TODO: 调用 API 删除设备
-          this.setData({ device: null })
-          this.updateNavTitle()
-          wx.showToast({ title: '设备已删除', icon: 'success' })
-        }
-      }
-    })
-  },
-
-  onEditDevice() {
-    wx.showToast({ title: '编辑功能开发中', icon: 'none' })
   }
 })

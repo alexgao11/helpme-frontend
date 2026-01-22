@@ -1,6 +1,7 @@
 {
   "pages": [
     "pages/device/device",
+    "pages/deviceDetail/deviceDetail",
     "pages/profile/profile",
     "pages/userinfo/userinfo",
     "pages/emergencyContacts/emergencyContacts",

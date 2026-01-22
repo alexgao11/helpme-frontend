@@ -1,0 +1,54 @@
+<template name="detailContent">
+  <view class="device-detail" wx:if="{{device}}">
+    <!-- 设备信息卡片 -->
+    <view class="device-card">
+      <view class="device-header">
+        <view class="device-name">{{device.name || '未命名设备'}}</view>
+        <view class="edit-icon" bindtap="onEditDevice">
+          <image src="/assets/icons/edit.svg" mode="aspectFit" class="edit-image" />
+        </view>
+      </view>
+      <view class="device-status">
+        <view class="status-dot {{device.activeAlarmCount > 0 ? 'status-alarm' : 'status-normal'}}"></view>
+        <text class="status-text">当前警报数 {{device.activeAlarmCount}}</text>
+      </view>
+    </view>
+
+    <!-- 分享按钮 -->
+    <button class="share-btn" bindtap="onShareToFamily">
+      <image src="/assets/icons/share.svg" mode="aspectFit" class="share-icon" />
+      <text>分享给家人</text>
+    </button>
+
+    <!-- 已分享用户 -->
+    <view class="shared-users-section">
+      <view class="section-title">已分享用户</view>
+      <view class="user-list">
+        <view class="user-item" wx:for="{{device.sharedTo}}" wx:key="id">
+          <view class="user-avatar">{{item.name ? item.name[0] : '?'}}</view>
+          <view class="user-name">{{item.name || '未命名'}}</view>
+          <view class="remove-btn" bindtap="onRemoveUser" data-id="{{item.id}}">×</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 删除设备 -->
+    <view class="delete-section">
+      <view class="delete-btn" bindtap="onDeleteDevice">删除设备</view>
+      <view class="delete-hint">删除后该设备将无法再触发你的通知</view>
+    </view>
+  </view>
+
+  <view class="empty-state" wx:else>
+    <text class="empty-text">未找到设备信息</text>
+  </view>
+</template>
+
+<view class="page-container">
+  <scroll-view class="detail-scroll" scroll-y wx:if="{{!detailScrollReady || detailScrollable}}">
+    <template is="detailContent" data="{{device: device}}" />
+  </scroll-view>
+  <view class="detail-scroll" wx:else>
+    <template is="detailContent" data="{{device: device}}" />
+  </view>
+</view>
