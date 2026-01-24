@@ -786,3 +786,9 @@ Page({
     return buffer;
   },
 });
+
+// Vodafone-96B4C
+// cakKfFtSSsc6a9ca
+// setwifi:Vodafone-96B4C|cakKfFtSSsc6a9ca
+// setip:192.168.86.156
+// getinfo

@@ -59,6 +59,7 @@ Page({
           this.updateScrollState();
         },
       );
+      this.fetchDeviceDetail();
       wx.setNavigationBarTitle({
         title: name || '设备详情',
       });
@@ -73,6 +74,7 @@ Page({
       this.setData({ device: normalizedDevice }, () => {
         this.updateScrollState();
       });
+      this.fetchDeviceDetail();
       this.setData({ shareNotice: '' });
       wx.setNavigationBarTitle({
         title: device?.name || '设备详情',
@@ -85,15 +87,24 @@ Page({
     if (this.data.device) {
       this.updateScrollState();
     }
-    this.fetchDeviceDetail();
+    if (this.data.device?.id) {
+      this.fetchDeviceDetail();
+    }
   },
 
   fetchDeviceDetail() {
     const deviceId = this.data.device?.id;
-    if (!deviceId) return;
+    if (!deviceId) {
+      console.log('[deviceDetail] missing deviceId, skip fetch');
+      return;
+    }
     const token = getToken();
-    if (!token) return;
+    if (!token) {
+      console.log('[deviceDetail] missing token, skip fetch');
+      return;
+    }
 
+    console.log('[deviceDetail] fetch device detail', { deviceId });
     wx.request({
       url: `${API_BASE}/api/devices/${deviceId}`,
       method: 'GET',
@@ -198,6 +209,31 @@ Page({
       content: `确定要移除 ${user.name || '该用户'} 吗？`,
       success: (res) => {
         if (res.confirm) {
+          this.removeSharedUser(userId);
+        }
+      },
+    });
+  },
+
+  removeSharedUser(userId: string) {
+    const device = this.data.device;
+    if (!device) return;
+    const token = getToken();
+    if (!token) {
+      wx.showToast({ title: '请先登录', icon: 'none' });
+      return;
+    }
+
+    wx.request({
+      url: `${API_BASE}/api/devices/${device.id}/share`,
+      method: 'DELETE',
+      header: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      data: { userId },
+      success: (res: WechatMiniprogram.RequestSuccessCallbackResult) => {
+        if (res.statusCode === 200) {
           const nextSharedTo = device.sharedTo.filter((u) => u.id !== userId);
           this.setData(
             { device: { ...device, sharedTo: nextSharedTo } },
@@ -205,7 +241,13 @@ Page({
               this.updateScrollState();
             },
           );
+          wx.showToast({ title: '移除成功', icon: 'success' });
+        } else {
+          wx.showToast({ title: '移除失败', icon: 'none' });
         }
+      },
+      fail: () => {
+        wx.showToast({ title: '移除失败', icon: 'none' });
       },
     });
   },
