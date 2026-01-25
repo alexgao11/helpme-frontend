@@ -30,6 +30,34 @@
       <text>{{shareNotice}}</text>
     </view>
 
+    <!-- 紧急呼叫按钮 -->
+    <view class="alarm-buttons-section">
+      <view class="section-title">紧急呼叫按钮</view>
+      <view class="alarm-buttons">
+        <view class="alarm-button-card" wx:for="{{device.buttons}}" wx:key="id">
+          <view class="alarm-button-header">
+            <view class="alarm-button-name">按钮 {{index + 1}}</view>
+            <view class="alarm-count">警报数 {{item.alarmsCount}}</view>
+          </view>
+          <view class="alarm-row">
+            <view class="alarm-label">位置</view>
+            <view class="alarm-value">{{item.location || '未设置'}}</view>
+          </view>
+          <view class="alarm-row">
+            <view class="alarm-label">注释</view>
+            <view class="alarm-value">{{item.note || '未设置'}}</view>
+          </view>
+          <view class="alarm-actions">
+            <button class="alarm-action-btn edit-btn" bindtap="onAlarmEdit" data-id="{{item.id}}">编辑</button>
+            <button class="alarm-action-btn delete-btn" bindtap="onAlarmDelete" data-id="{{item.id}}">删除</button>
+          </view>
+        </view>
+        <view class="alarm-empty" wx:if="{{!device.buttons || device.buttons.length === 0}}">
+          <text>暂无按钮</text>
+        </view>
+      </view>
+    </view>
+
     <!-- 已分享用户 -->
     <view class="shared-users-section">
       <view class="section-title">已分享用户</view>
@@ -87,6 +115,26 @@
     <view class="modal-buttons">
       <button class="modal-btn cancel-btn" bindtap="onEditModalClose">取消</button>
       <button class="modal-btn confirm-btn" bindtap="onEditModalConfirm">更新</button>
+    </view>
+  </view>
+
+  <view class="modal-overlay" wx:if="{{showButtonModal}}" bindtap="onButtonModalClose"></view>
+  <view class="modal-container" wx:if="{{showButtonModal}}">
+    <view class="modal-title">编辑按钮</view>
+
+    <view class="modal-field">
+      <view class="field-label">位置</view>
+      <input class="field-input" placeholder="请输入位置" value="{{editingButton.location}}" bindinput="onButtonLocationInput" />
+    </view>
+
+    <view class="modal-field">
+      <view class="field-label">注释</view>
+      <input class="field-input" placeholder="请输入注释" value="{{editingButton.note}}" bindinput="onButtonNoteInput" />
+    </view>
+
+    <view class="modal-buttons">
+      <button class="modal-btn cancel-btn" bindtap="onButtonModalClose">取消</button>
+      <button class="modal-btn confirm-btn" bindtap="onButtonModalConfirm">更新</button>
     </view>
   </view>
 </view>

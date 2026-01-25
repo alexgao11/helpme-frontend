@@ -125,6 +125,108 @@
   line-height: 1.5;
 }
 
+.alarm-buttons-section {
+  background-color: #ffffff;
+  border-radius: 24rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+}
+
+.alarm-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.alarm-button-card {
+  border: 1rpx solid #f0f0f0;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.alarm-button-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.alarm-button-name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #000000;
+}
+
+.alarm-count {
+  font-size: 26rpx;
+  color: #ff3b30;
+  background-color: #fff1f0;
+  padding: 6rpx 16rpx;
+  border-radius: 999rpx;
+}
+
+.alarm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 28rpx;
+  color: #333333;
+}
+
+.alarm-label {
+  color: #999999;
+}
+
+.alarm-value {
+  color: #333333;
+  max-width: 60%;
+  text-align: right;
+  word-break: break-all;
+}
+
+.alarm-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 4rpx;
+}
+
+.alarm-action-btn {
+  flex: 1;
+  height: 72rpx;
+  border-radius: 36rpx;
+  font-size: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+}
+
+.alarm-action-btn::after {
+  border: none;
+}
+
+.alarm-action-btn.edit-btn {
+  background-color: #f2f4f7;
+  color: #333333;
+  border: 2rpx solid #e5e5e5;
+}
+
+.alarm-action-btn.delete-btn {
+  background-color: #fff1f0;
+  color: #d92d20;
+  border: 2rpx solid #ffd6d2;
+}
+
+.alarm-empty {
+  font-size: 26rpx;
+  color: #999999;
+  text-align: center;
+  padding: 16rpx 0;
+}
+
 .shared-users-section {
   background-color: #ffffff;
   border-radius: 24rpx;

@@ -39,6 +39,7 @@ Page({
     devices: [] as ApiDevice[],
     isLoading: false,
     loadError: '',
+    isRefreshing: false,
     showConfig: false,
     configClosing: false,
     pageScrollable: false,
@@ -73,7 +74,13 @@ Page({
   },
 
   onPullDownRefresh() {
-    this.loadDevices({ stopPullDown: true });
+    this.onScrollRefresh();
+  },
+
+  onScrollRefresh() {
+    if (this.data.isRefreshing) return;
+    this.setData({ isRefreshing: true });
+    this.loadDevices({ stopPullDown: true, stopRefresh: true });
   },
 
   onUnload() {
@@ -99,7 +106,7 @@ Page({
   },
 
   // 加载设备列表
-  loadDevices(options?: { stopPullDown?: boolean }) {
+  loadDevices(options?: { stopPullDown?: boolean; stopRefresh?: boolean }) {
     const token = getToken();
     this.setData({ isLoading: true, loadError: '' });
 
@@ -129,6 +136,9 @@ Page({
         this.setData({ isLoading: false }, () => {
           this.updatePageScrollState();
         });
+        if (options?.stopRefresh) {
+          this.setData({ isRefreshing: false });
+        }
         if (options?.stopPullDown) {
           wx.stopPullDownRefresh();
         }
@@ -142,8 +152,12 @@ Page({
     const device = this.data.devices[index];
     if (!device) return;
 
+    const detailUrl =
+      device.deviceTypeId === 9
+        ? '/pages/deviceDetail/9/index'
+        : '/pages/deviceDetail/deviceDetail';
     wx.navigateTo({
-      url: '/pages/deviceDetail/deviceDetail',
+      url: detailUrl,
       success: (res) => {
         res.eventChannel.emit('device', device);
       },
@@ -604,7 +618,7 @@ Page({
       }
 
       const deviceTypeId = Number(parts[0].trim());
-      const macAddress = parts[1].trim();
+      const macAddress = parts[1].trim().replace(/:/g, '').toLowerCase();
       const readyFlag = Number(parts[2].trim());
       if (!Number.isFinite(deviceTypeId) || !macAddress) {
         return;

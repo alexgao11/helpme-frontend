@@ -1,5 +1,6 @@
 <template name="deviceContent">
   <view class="page-content">
+    <view class="refresh-tip" wx:if="{{isRefreshing}}">正在刷新...</view>
     <!-- 设备列表 -->
     <view class="device-list-section">
       <view class="section-title">设备列表</view>
@@ -87,18 +88,20 @@
 </template>
 
 <view class="page-container">
-  <scroll-view class="page-scroll" scroll-y wx:if="{{!pageScrollReady || pageScrollable}}">
+  <scroll-view
+    class="page-scroll"
+    scroll-y="{{pageScrollReady ? pageScrollable : true}}"
+    show-scrollbar="{{pageScrollable}}"
+    refresher-enabled="{{true}}"
+    refresher-triggered="{{isRefreshing}}"
+    refresher-background="#f5f5f5"
+    bindrefresherrefresh="onScrollRefresh"
+  >
     <template
       is="deviceContent"
-      data="{{devices: devices, isLoading: isLoading, loadError: loadError, showConfig: showConfig, configStep: configStep, ssid: ssid, password: password, showPassword: showPassword, statusText: statusText, resultMessage: resultMessage}}"
+      data="{{devices: devices, isLoading: isLoading, loadError: loadError, showConfig: showConfig, configStep: configStep, ssid: ssid, password: password, showPassword: showPassword, statusText: statusText, resultMessage: resultMessage, isRefreshing: isRefreshing}}"
     />
   </scroll-view>
-  <view class="page-scroll" wx:else>
-    <template
-      is="deviceContent"
-      data="{{devices: devices, isLoading: isLoading, loadError: loadError, showConfig: showConfig, configStep: configStep, ssid: ssid, password: password, showPassword: showPassword, statusText: statusText, resultMessage: resultMessage}}"
-    />
-  </view>
 
   <view class="page-footer" wx:if="{{!showConfig}}">
     <button class="add-device-btn" bindtap="onShowConfig">添加设备</button>

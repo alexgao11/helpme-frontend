@@ -1,5 +1,12 @@
-import { getToken, getUserInfo, isLoggedIn } from '../../utils/auth';
-import { API_BASE } from '../../utils/constant';
+import { getToken, getUserInfo, isLoggedIn } from '../../../utils/auth';
+import { API_BASE } from '../../../utils/constant';
+
+interface ApiAlarmButton {
+  id: string;
+  alarmsCount: number;
+  location?: string | null;
+  note?: string | null;
+}
 
 interface ApiDevice {
   id: string;
@@ -9,11 +16,18 @@ interface ApiDevice {
   location: string | null;
   sharedTo: Array<{ id: string; name: string }>;
   activeAlarmCount: number;
+  buttons?: ApiAlarmButton[];
 }
 
 interface EditDeviceForm {
   name: string;
   location: string;
+}
+
+interface EditAlarmButtonForm {
+  id: string;
+  location: string;
+  note: string;
 }
 
 Page({
@@ -30,6 +44,13 @@ Page({
       name: '',
       location: '',
     } as EditDeviceForm,
+    showButtonModal: false,
+    isUpdatingButton: false,
+    editingButton: {
+      id: '',
+      location: '',
+      note: '',
+    } as EditAlarmButtonForm,
   },
 
   onLoad(options: Record<string, string>) {
@@ -48,11 +69,12 @@ Page({
           device: {
             id: options.id,
             name,
-            deviceTypeId: 0,
+            deviceTypeId: 9,
             status: 0,
             location: null,
             sharedTo: [],
             activeAlarmCount: 0,
+            buttons: [],
           },
           shareNotice,
         },
@@ -68,16 +90,17 @@ Page({
 
     const eventChannel = this.getOpenerEventChannel();
     eventChannel.on('device', (device: ApiDevice) => {
-      if (device?.deviceTypeId === 9) {
-        const encodedName = encodeURIComponent(device.name || '');
+      if (device?.deviceTypeId !== 9) {
+        const encodedName = encodeURIComponent(device?.name || '');
         wx.redirectTo({
-          url: `/pages/deviceDetail/9/index?id=${device.id}&name=${encodedName}`,
+          url: `/pages/deviceDetail/deviceDetail?id=${device.id}&name=${encodedName}`,
         });
         return;
       }
       const normalizedDevice = {
         ...device,
         sharedTo: Array.isArray(device.sharedTo) ? device.sharedTo : [],
+        buttons: Array.isArray(device.buttons) ? device.buttons : [],
       };
       this.setData({ device: normalizedDevice }, () => {
         this.updateScrollState();
@@ -110,13 +133,10 @@ Page({
     this.fetchDeviceDetail({ stopRefresh: true, stopPullDown: true });
   },
 
-  fetchDeviceDetail(options?: {
-    stopRefresh?: boolean;
-    stopPullDown?: boolean;
-  }) {
+  fetchDeviceDetail(options?: { stopRefresh?: boolean; stopPullDown?: boolean }) {
     const deviceId = this.data.device?.id;
     if (!deviceId) {
-      console.log('[deviceDetail] missing deviceId, skip fetch');
+      console.log('[alarmDetail] missing deviceId, skip fetch');
       if (options?.stopRefresh) {
         this.setData({ isRefreshing: false });
       }
@@ -127,7 +147,7 @@ Page({
     }
     const token = getToken();
     if (!token) {
-      console.log('[deviceDetail] missing token, skip fetch');
+      console.log('[alarmDetail] missing token, skip fetch');
       if (options?.stopRefresh) {
         this.setData({ isRefreshing: false });
       }
@@ -137,7 +157,7 @@ Page({
       return;
     }
 
-    console.log('[deviceDetail] fetch device detail', { deviceId });
+    console.log('[alarmDetail] fetch device detail', { deviceId });
     wx.request({
       url: `${API_BASE}/api/devices/${deviceId}`,
       method: 'GET',
@@ -150,11 +170,12 @@ Page({
           const normalizedDevice = {
             ...device,
             sharedTo: Array.isArray(device.sharedTo) ? device.sharedTo : [],
+            buttons: Array.isArray(device.buttons) ? device.buttons : [],
           };
-          if (normalizedDevice.deviceTypeId === 9) {
+          if (normalizedDevice.deviceTypeId !== 9) {
             const encodedName = encodeURIComponent(normalizedDevice.name || '');
             wx.redirectTo({
-              url: `/pages/deviceDetail/9/index?id=${normalizedDevice.id}&name=${encodedName}`,
+              url: `/pages/deviceDetail/deviceDetail?id=${normalizedDevice.id}&name=${encodedName}`,
             });
             return;
           }
@@ -393,6 +414,157 @@ Page({
       },
       complete: () => {
         this.setData({ isUpdatingDevice: false });
+      },
+    });
+  },
+
+  onAlarmEdit(e: WechatMiniprogram.TouchEvent) {
+    const buttonId = e.currentTarget.dataset.id as string;
+    const device = this.data.device;
+    if (!device?.buttons || !buttonId) return;
+
+    const button = device.buttons.find((item) => item.id === buttonId);
+    if (!button) return;
+
+    this.setData({
+      showButtonModal: true,
+      editingButton: {
+        id: button.id,
+        location: button.location || '',
+        note: button.note || '',
+      },
+    });
+  },
+
+  onButtonModalClose() {
+    if (this.data.isUpdatingButton) return;
+    this.setData({ showButtonModal: false });
+  },
+
+  onButtonLocationInput(e: WechatMiniprogram.Input) {
+    this.setData({ 'editingButton.location': e.detail.value });
+  },
+
+  onButtonNoteInput(e: WechatMiniprogram.Input) {
+    this.setData({ 'editingButton.note': e.detail.value });
+  },
+
+  onButtonModalConfirm() {
+    const device = this.data.device;
+    const buttonId = this.data.editingButton.id;
+    if (!device || !buttonId) return;
+
+    const location = this.data.editingButton.location.trim();
+    const note = this.data.editingButton.note.trim();
+    const payload: Record<string, string> = {};
+
+    if (location) {
+      payload.location = location;
+    }
+    if (note) {
+      payload.note = note;
+    }
+
+    if (!payload.location && !payload.note) {
+      wx.showToast({ title: '请输入位置或注释', icon: 'none' });
+      return;
+    }
+
+    const token = getToken();
+    if (!token) {
+      wx.showToast({ title: '请先登录', icon: 'none' });
+      return;
+    }
+
+    this.setData({ isUpdatingButton: true });
+    wx.request({
+      url: `${API_BASE}/api/devices/${device.id}/button/${buttonId}`,
+      method: 'PUT',
+      header: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      data: payload,
+      success: (res: WechatMiniprogram.RequestSuccessCallbackResult) => {
+        if (res.statusCode === 200) {
+          const nextButtons = (device.buttons || []).map((item) => {
+            if (item.id !== buttonId) return item;
+            return {
+              ...item,
+              location: payload.location ?? item.location,
+              note: payload.note ?? item.note,
+            };
+          });
+          this.setData(
+            {
+              device: { ...device, buttons: nextButtons },
+              showButtonModal: false,
+            },
+            () => {
+              this.updateScrollState();
+            },
+          );
+          wx.showToast({ title: '更新成功', icon: 'success' });
+        } else {
+          wx.showToast({ title: '更新失败', icon: 'none' });
+        }
+      },
+      fail: () => {
+        wx.showToast({ title: '更新失败', icon: 'none' });
+      },
+      complete: () => {
+        this.setData({ isUpdatingButton: false });
+      },
+    });
+  },
+
+  onAlarmDelete(e: WechatMiniprogram.TouchEvent) {
+    const buttonId = e.currentTarget.dataset.id as string;
+    const device = this.data.device;
+    if (!device?.buttons || !buttonId) return;
+
+    wx.showModal({
+      title: '删除按钮',
+      content: '确定要删除该按钮吗？',
+      confirmColor: '#FF3B30',
+      success: (res) => {
+        if (res.confirm) {
+          this.deleteAlarmButton(buttonId);
+        }
+      },
+    });
+  },
+
+  deleteAlarmButton(buttonId: string) {
+    const device = this.data.device;
+    if (!device) return;
+    const token = getToken();
+    if (!token) {
+      wx.showToast({ title: '请先登录', icon: 'none' });
+      return;
+    }
+
+    wx.request({
+      url: `${API_BASE}/api/devices/${device.id}/button/${buttonId}`,
+      method: 'DELETE',
+      header: {
+        Authorization: `Bearer ${token}`,
+      },
+      success: (res: WechatMiniprogram.RequestSuccessCallbackResult) => {
+        if (res.statusCode === 200) {
+          const nextButtons = (device.buttons || []).filter(
+            (item) => item.id !== buttonId,
+          );
+          this.setData({ device: { ...device, buttons: nextButtons } }, () => {
+            this.updateScrollState();
+          });
+          wx.showToast({ title: '删除成功', icon: 'success' });
+        } else {
+          wx.showToast({ title: '删除失败', icon: 'none' });
+        }
+      },
+      fail: () => {
+        wx.showToast({ title: '删除失败', icon: 'none' });
       },
     });
   },
