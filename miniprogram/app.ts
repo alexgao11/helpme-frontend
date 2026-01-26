@@ -1,5 +1,6 @@
 // app.ts
 import { isLoggedIn, getUserInfo } from './utils/auth'
+import { needsSubscribeAuth, requestAlarmSubscribe } from './utils/subscribe'
 
 App<IAppOption>({
   globalData: {},
@@ -24,5 +25,27 @@ App<IAppOption>({
         url: '/pages/device/device'
       })
     }
+  },
+
+  onShow() {
+    if (!isLoggedIn()) {
+      return
+    }
+
+    if (!needsSubscribeAuth()) {
+      return
+    }
+
+    wx.showModal({
+      title: '告警通知',
+      content: '授权小程序发送告警通知',
+      confirmText: '去授权',
+      success: async (res) => {
+        if (!res.confirm) {
+          return
+        }
+        await requestAlarmSubscribe()
+      }
+    })
   }
 })

@@ -1,7 +1,6 @@
 Component({
   data: {
-    selected: 0,
-    showProfileDot: false
+    selected: 0
   },
   methods: {
     switchTab(e: WechatMiniprogram.TouchEvent) {

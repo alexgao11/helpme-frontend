@@ -1,17 +1,14 @@
 import { getUserInfo } from '../../utils/auth'
-import { needsSubscribeAuth, requestAlarmSubscribe } from '../../utils/subscribe'
 
 Page({
   data: {
     nickname: '微信用户',
-    phoneDisplay: '',
-    showSubscribeAuth: false
+    phoneDisplay: ''
   },
 
   onShow() {
-    const needsAuth = this.refreshSubscribeAuth()
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
-      this.getTabBar().setData({ selected: 1, showProfileDot: needsAuth })
+      this.getTabBar().setData({ selected: 1 })
     }
     this.loadUserInfo()
   },
@@ -42,17 +39,18 @@ Page({
     console.log('关于/使用说明')
   },
 
-  async onSubscribeTap() {
-    await requestAlarmSubscribe()
-    const needsAuth = this.refreshSubscribeAuth()
-    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
-      this.getTabBar().setData({ selected: 1, showProfileDot: needsAuth })
-    }
-  },
-
-  refreshSubscribeAuth() {
-    const needsAuth = needsSubscribeAuth()
-    this.setData({ showSubscribeAuth: needsAuth })
-    return needsAuth
+  onLogoutTap() {
+    wx.showModal({
+      title: '确认退出',
+      content: '退出后需要重新登录',
+      confirmText: '退出',
+      success: (res) => {
+        if (!res.confirm) {
+          return
+        }
+        wx.clearStorageSync()
+        wx.reLaunch({ url: '/pages/login/login' })
+      }
+    })
   }
 })
