@@ -28,6 +28,7 @@
   align-items: center;
   justify-content: center;
   margin-bottom: 4rpx;
+  position: relative;
 }
 
 .tab-text {
@@ -87,4 +88,14 @@
 .tab-bar-item.active .user-head-small,
 .tab-bar-item.active .user-body-small {
   border-color: #3478F6;
+}
+
+.tab-dot {
+  position: absolute;
+  top: -4rpx;
+  right: -4rpx;
+  width: 14rpx;
+  height: 14rpx;
+  background: #E0423F;
+  border-radius: 50%;
 }

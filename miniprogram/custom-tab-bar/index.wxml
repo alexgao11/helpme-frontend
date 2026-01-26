@@ -16,6 +16,7 @@
         <view class="user-head-small"></view>
         <view class="user-body-small"></view>
       </view>
+      <view class="tab-dot" wx:if="{{showProfileDot}}"></view>
     </view>
     <view class="tab-text">我的</view>
   </view>

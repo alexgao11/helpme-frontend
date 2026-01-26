@@ -90,6 +90,10 @@
   color: #000000;
 }
 
+.menu-label-warn {
+  color: #E0423F;
+}
+
 .menu-right {
   display: flex;
   align-items: center;

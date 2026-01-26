@@ -1,4 +1,5 @@
 import { setToken, setUserInfo } from '../../utils/auth'
+import { requestAlarmSubscribe } from '../../utils/subscribe'
 import { API_BASE } from '../../utils/constant'
 
 Page({
@@ -61,6 +62,8 @@ Page({
       setUserInfo(response.user)
 
       wx.hideLoading()
+
+      await requestAlarmSubscribe()
 
       // 根据 nickname 决定跳转页面
       if (!response.user.nickname) {

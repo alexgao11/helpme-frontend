@@ -1,5 +1,6 @@
 import { API_BASE } from '../../utils/constant';
 import { getToken } from '../../utils/auth';
+import { needsSubscribeAuth } from '../../utils/subscribe';
 
 interface BluetoothDevice {
   deviceId: string;
@@ -67,7 +68,7 @@ Page({
 
   onShow() {
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
-      this.getTabBar().setData({ selected: 0 });
+      this.getTabBar().setData({ selected: 0, showProfileDot: needsSubscribeAuth() });
     }
     wx.setNavigationBarTitle({ title: '我的设备' });
     this.loadDevices();

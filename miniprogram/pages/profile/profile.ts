@@ -1,14 +1,17 @@
 import { getUserInfo } from '../../utils/auth'
+import { needsSubscribeAuth, requestAlarmSubscribe } from '../../utils/subscribe'
 
 Page({
   data: {
     nickname: '微信用户',
-    phoneDisplay: ''
+    phoneDisplay: '',
+    showSubscribeAuth: false
   },
 
   onShow() {
+    const needsAuth = this.refreshSubscribeAuth()
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
-      this.getTabBar().setData({ selected: 1 })
+      this.getTabBar().setData({ selected: 1, showProfileDot: needsAuth })
     }
     this.loadUserInfo()
   },
@@ -37,5 +40,19 @@ Page({
 
   onAboutTap() {
     console.log('关于/使用说明')
+  },
+
+  async onSubscribeTap() {
+    await requestAlarmSubscribe()
+    const needsAuth = this.refreshSubscribeAuth()
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().setData({ selected: 1, showProfileDot: needsAuth })
+    }
+  },
+
+  refreshSubscribeAuth() {
+    const needsAuth = needsSubscribeAuth()
+    this.setData({ showSubscribeAuth: needsAuth })
+    return needsAuth
   }
 })

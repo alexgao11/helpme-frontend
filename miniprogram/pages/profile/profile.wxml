@@ -26,6 +26,12 @@
         <text class="menu-arrow">></text>
       </view>
     </view>
+    <view class="menu-item" bindtap="onSubscribeTap" wx:if="{{showSubscribeAuth}}">
+      <view class="menu-label menu-label-warn">授权小程序发送告警通知</view>
+      <view class="menu-right">
+        <text class="menu-arrow">></text>
+      </view>
+    </view>
     <view class="menu-item" bindtap="onAboutTap">
       <view class="menu-label">关于 / 使用说明</view>
       <view class="menu-right">
