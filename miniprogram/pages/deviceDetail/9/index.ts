@@ -133,7 +133,10 @@ Page({
     this.fetchDeviceDetail({ stopRefresh: true, stopPullDown: true });
   },
 
-  fetchDeviceDetail(options?: { stopRefresh?: boolean; stopPullDown?: boolean }) {
+  fetchDeviceDetail(options?: {
+    stopRefresh?: boolean;
+    stopPullDown?: boolean;
+  }) {
     const deviceId = this.data.device?.id;
     if (!deviceId) {
       console.log('[alarmDetail] missing deviceId, skip fetch');
@@ -328,10 +331,34 @@ Page({
       confirmColor: '#FF3B30',
       success: (res) => {
         if (res.confirm) {
-          wx.showToast({ title: '设备已删除', icon: 'success' });
-          setTimeout(() => {
-            wx.navigateBack();
-          }, 1500);
+          const device = this.data.device;
+          if (!device) return;
+          const token = getToken();
+          if (!token) {
+            wx.showToast({ title: '请先登录', icon: 'none' });
+            return;
+          }
+
+          wx.request({
+            url: `${API_BASE}/api/devices/${device.id}`,
+            method: 'DELETE',
+            header: {
+              Authorization: `Bearer ${token}`,
+            },
+            success: (res: WechatMiniprogram.RequestSuccessCallbackResult) => {
+              if (res.statusCode === 200 || res.statusCode === 204) {
+                wx.showToast({ title: '设备已删除', icon: 'success' });
+                setTimeout(() => {
+                  wx.navigateBack();
+                }, 1500);
+              } else {
+                wx.showToast({ title: '删除失败', icon: 'none' });
+              }
+            },
+            fail: () => {
+              wx.showToast({ title: '删除失败', icon: 'none' });
+            },
+          });
         }
       },
     });
