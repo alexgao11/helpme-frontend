@@ -30,6 +30,28 @@ interface EditAlarmButtonForm {
   note: string;
 }
 
+const requestShareCode = (deviceId: string, token: string) =>
+  new Promise<string>((resolve, reject) => {
+    wx.request({
+      url: `${API_BASE}/api/devices/${deviceId}/share`,
+      method: 'POST',
+      header: {
+        Authorization: `Bearer ${token}`,
+      },
+      success: (res: WechatMiniprogram.RequestSuccessCallbackResult) => {
+        if (res.statusCode === 201 && res.data) {
+          const data = res.data as { shareCode?: string };
+          if (data.shareCode) {
+            resolve(data.shareCode);
+            return;
+          }
+        }
+        reject(new Error('分享码获取失败'));
+      },
+      fail: reject,
+    });
+  });
+
 Page({
   data: {
     device: null as ApiDevice | null,
@@ -37,6 +59,8 @@ Page({
     detailScrollReady: false,
     shareNotice: '',
     canShare: false,
+    shareCode: '',
+    isPreparingShare: false,
     isRefreshing: false,
     showEditModal: false,
     isUpdatingDevice: false,
@@ -231,7 +255,7 @@ Page({
     });
   },
 
-  buildSharePayload() {
+  buildSharePayload(shareCode: string) {
     const device = this.data.device;
     const name = device?.name || '设备';
     const nickname =
@@ -242,8 +266,9 @@ Page({
     const userId = userInfo?.id || userInfo?.userId || '';
     const encodedName = encodeURIComponent(name);
     const encodedNickname = encodeURIComponent(nickname || '');
+    const encodedShareCode = encodeURIComponent(shareCode);
     const path = device?.id
-      ? `/pages/shareReceive/shareReceive?fromId=${userId}&fromName=${encodedNickname}&deviceId=${device.id}&deviceName=${encodedName}`
+      ? `/pages/shareReceive/shareReceive?fromId=${userId}&fromName=${encodedNickname}&deviceId=${device.id}&shareCode=${encodedShareCode}&deviceName=${encodedName}`
       : '/pages/device/device';
 
     return {
@@ -258,6 +283,39 @@ Page({
     wx.navigateTo({ url: '/pages/login/login' });
   },
 
+  onPrepareShare() {
+    if (!isLoggedIn()) {
+      this.onShareToFamily();
+      return;
+    }
+    const deviceId = this.data.device?.id;
+    if (!deviceId) {
+      wx.showToast({ title: '设备信息缺失', icon: 'none' });
+      return;
+    }
+    if (this.data.isPreparingShare) return;
+    const token = getToken();
+    if (!token) {
+      this.onShareToFamily();
+      return;
+    }
+
+    this.setData({ isPreparingShare: true });
+    wx.showLoading({ title: '生成分享码...' });
+    requestShareCode(deviceId, token)
+      .then((shareCode) => {
+        this.setData({ shareCode });
+      })
+      .catch((error) => {
+        console.log('[deviceDetail9] fetch share code failed', error);
+        wx.showToast({ title: '生成分享码失败', icon: 'none' });
+      })
+      .finally(() => {
+        wx.hideLoading();
+        this.setData({ isPreparingShare: false });
+      });
+  },
+
   onShareAppMessage() {
     if (!isLoggedIn()) {
       return {
@@ -265,7 +323,14 @@ Page({
         path: '/pages/login/login',
       };
     }
-    return this.buildSharePayload();
+    const shareCode = this.data.shareCode;
+    if (!shareCode || !this.data.device?.id) {
+      return {
+        title: '设备分享',
+        path: '/pages/device/device',
+      };
+    }
+    return this.buildSharePayload(shareCode);
   },
 
   onRemoveUser(e: WechatMiniprogram.TouchEvent) {
