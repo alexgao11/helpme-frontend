@@ -1,5 +1,10 @@
 import { API_BASE } from '../../utils/constant';
 import { getToken, isLoggedIn } from '../../utils/auth';
+import {
+  needsSubscribeAuth,
+  refreshSubscribeStatus,
+  requestAlarmSubscribe,
+} from '../../utils/subscribe';
 
 interface BluetoothDevice {
   deviceId: string;
@@ -75,6 +80,7 @@ Page({
     }
     wx.setNavigationBarTitle({ title: '我的设备' });
     this.loadDevices();
+    this.checkSubscribeAuth();
   },
 
   onPullDownRefresh() {
@@ -94,6 +100,25 @@ Page({
     }
     this.clearReadInfoTimer();
     this.cleanupBluetooth();
+  },
+
+  checkSubscribeAuth() {
+    refreshSubscribeStatus().then(() => {
+      if (!needsSubscribeAuth()) {
+        return;
+      }
+      wx.showModal({
+        title: '告警通知',
+        content: '授权小程序发送告警通知',
+        confirmText: '去授权',
+        success: (res) => {
+          if (!res.confirm) {
+            return;
+          }
+          requestAlarmSubscribe();
+        },
+      });
+    });
   },
 
   // 输入框绑定

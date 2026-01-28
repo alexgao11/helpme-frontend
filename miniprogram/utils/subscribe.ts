@@ -1,4 +1,5 @@
 const SUBSCRIBE_STATUS_KEY = 'subscribe_message_status'
+const SUBSCRIBE_PROMPT_AT_KEY = 'subscribe_message_prompt_at'
 const ALARM_TEMPLATE_ID = 'hpxcTOI19Qx6QhW6rbRVaH-N4NxX5u9J8QMsi5v-ujs'
 
 export type SubscribeStatus = 'accept' | 'reject' | 'ban' | 'unknown'
@@ -11,8 +12,42 @@ export function setSubscribeStatus(status: SubscribeStatus): void {
   wx.setStorageSync(SUBSCRIBE_STATUS_KEY, status)
 }
 
+export function getLastSubscribePromptAt(): number {
+  return Number(wx.getStorageSync(SUBSCRIBE_PROMPT_AT_KEY)) || 0
+}
+
+export function setLastSubscribePromptAt(timestamp: number): void {
+  wx.setStorageSync(SUBSCRIBE_PROMPT_AT_KEY, timestamp)
+}
+
 export function needsSubscribeAuth(): boolean {
   return getSubscribeStatus() !== 'accept'
+}
+
+export function refreshSubscribeStatus(): Promise<SubscribeStatus> {
+  return new Promise((resolve) => {
+    wx.getSetting({
+      withSubscriptions: true,
+      success: (res) => {
+        const setting = res.subscriptionsSetting
+        const itemSettings = setting && setting.itemSettings ? setting.itemSettings : undefined
+        const itemStatus = (itemSettings
+          ? (itemSettings[ALARM_TEMPLATE_ID] as SubscribeStatus | undefined)
+          : undefined)
+        let status: SubscribeStatus = getSubscribeStatus()
+        if (setting && setting.mainSwitch === false) {
+          status = 'reject'
+        } else if (itemStatus === 'accept' || itemStatus === 'reject' || itemStatus === 'ban') {
+          status = itemStatus
+        }
+        setSubscribeStatus(status)
+        resolve(status)
+      },
+      fail: () => {
+        resolve(getSubscribeStatus())
+      }
+    })
+  })
 }
 
 export function requestAlarmSubscribe(): Promise<SubscribeStatus> {

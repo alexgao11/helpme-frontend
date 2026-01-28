@@ -3,9 +3,28 @@ import { requestAlarmSubscribe } from '../../utils/subscribe'
 import { API_BASE } from '../../utils/constant'
 
 Page({
-  data: {},
+  data: {
+    loginCode: ''
+  },
 
-  onLoad() {},
+  onLoad() {
+    this.refreshLoginCode()
+  },
+
+  async refreshLoginCode() {
+    try {
+      const loginRes = await new Promise<WechatMiniprogram.LoginSuccessCallbackResult>((resolve, reject) => {
+        wx.login({
+          success: resolve,
+          fail: reject
+        })
+      })
+      this.setData({ loginCode: loginRes.code })
+    } catch (error) {
+      console.log(error)
+      this.setData({ loginCode: '' })
+    }
+  },
 
   // 获取手机号回调
   async onGetPhoneNumber(e: WechatMiniprogram.ButtonGetUserInfo) {
@@ -28,21 +47,26 @@ Page({
     wx.showLoading({ title: '登录中...' })
 
     try {
-      // 获取微信登录凭证
-      const loginRes = await new Promise<WechatMiniprogram.LoginSuccessCallbackResult>((resolve, reject) => {
-        wx.login({
-          success: resolve,
-          fail: reject
-        })
-      })
+      // 复用按钮点击前获取到的 code，避免与本次 encryptedData/iv 不匹配
+      let loginCode = this.data.loginCode
+      if (!loginCode) {
+        await this.refreshLoginCode()
+        loginCode = this.data.loginCode
+      }
+      if (!loginCode) {
+        throw new Error('无法获取登录凭证')
+      }
 
       // 调用登录API
       const response = await new Promise<{ token: string; user: any  }>((resolve, reject) => {
         wx.request({
           url: `${API_BASE}/api/user/login`,
           method: 'POST',
+          header: {
+            'content-type': 'application/json'
+          },
           data: {
-            code: loginRes.code,
+            code: loginCode,
             encryptedData: e.detail.encryptedData,
             iv: e.detail.iv
           },
@@ -56,6 +80,9 @@ Page({
           fail: reject
         })
       })
+
+      // code 只能用一次，消费后清空
+      this.setData({ loginCode: '' })
 
       // 保存登录信息
       setToken(response.token)
@@ -77,6 +104,7 @@ Page({
       }
     } catch (error) {
       console.log(error)
+      this.setData({ loginCode: '' })
       wx.hideLoading()
       wx.showToast({
         title: '登录失败，请重试',
