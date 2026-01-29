@@ -5,7 +5,7 @@
     <view class="device-card">
       <view class="device-header">
         <view class="device-name">{{device.name || '未命名设备'}}</view>
-        <view class="edit-icon" bindtap="onEditDevice">
+        <view class="edit-icon" wx:if="{{!isReadOnly}}" bindtap="onEditDevice">
           <image src="/assets/icons/edit.svg" mode="aspectFit" class="edit-image" />
         </view>
       </view>
@@ -17,14 +17,16 @@
     </view>
 
     <!-- 分享按钮 -->
-    <button class="share-btn" wx:if="{{canShare}}" open-type="share" bindtap="onPrepareShare">
-      <image src="/assets/icons/share.svg" mode="aspectFit" class="share-icon" />
-      <text>分享给家人</text>
-    </button>
-    <button class="share-btn" wx:else bindtap="onShareToFamily">
-      <image src="/assets/icons/share.svg" mode="aspectFit" class="share-icon" />
-      <text>分享给家人</text>
-    </button>
+    <view wx:if="{{!isReadOnly}}">
+      <button class="share-btn" wx:if="{{canShare}}" open-type="share" bindtap="onPrepareShare">
+        <image src="/assets/icons/share.svg" mode="aspectFit" class="share-icon" />
+        <text>分享给家人</text>
+      </button>
+      <button class="share-btn" wx:else bindtap="onShareToFamily">
+        <image src="/assets/icons/share.svg" mode="aspectFit" class="share-icon" />
+        <text>分享给家人</text>
+      </button>
+    </view>
 
     <view class="share-notice" wx:if="{{shareNotice}}">
       <text>{{shareNotice}}</text>
@@ -47,7 +49,7 @@
             <view class="alarm-label">注释</view>
             <view class="alarm-value">{{item.note || '未设置'}}</view>
           </view>
-          <view class="alarm-actions">
+          <view class="alarm-actions" wx:if="{{!isReadOnly}}">
             <button class="alarm-action-btn edit-btn" bindtap="onAlarmEdit" data-id="{{item.id}}">编辑</button>
             <button class="alarm-action-btn delete-btn" bindtap="onAlarmDelete" data-id="{{item.id}}">删除</button>
           </view>
@@ -59,7 +61,7 @@
     </view>
 
     <!-- 已分享用户 -->
-    <view class="shared-users-section">
+    <view class="shared-users-section" wx:if="{{!isReadOnly}}">
       <view class="section-title">已分享用户</view>
       <view class="user-list">
         <view class="user-item" wx:for="{{device.sharedTo}}" wx:key="id">
@@ -71,7 +73,7 @@
     </view>
 
     <!-- 删除设备 -->
-    <view class="delete-section">
+    <view class="delete-section" wx:if="{{!isReadOnly}}">
       <view class="delete-btn" bindtap="onDeleteDevice">删除设备</view>
       <view class="delete-hint">删除后该设备将无法再触发你的通知</view>
     </view>
@@ -94,7 +96,7 @@
   >
     <template
       is="detailContent"
-      data="{{device: device, shareNotice: shareNotice, canShare: canShare, isRefreshing: isRefreshing}}"
+      data="{{device: device, shareNotice: shareNotice, canShare: canShare, isRefreshing: isRefreshing, isReadOnly: isReadOnly}}"
     />
   </scroll-view>
 

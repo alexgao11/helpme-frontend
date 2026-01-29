@@ -8,6 +8,7 @@ interface ApiDevice {
   status: number;
   location: string | null;
   sharedTo: Array<{ id: string; name: string }>;
+  shareTo?: Array<{ id: string; name: string }>;
   activeAlarmCount: number;
 }
 
@@ -52,6 +53,28 @@ const registerShareCode = (
     });
   });
 
+const getCurrentUserId = () => {
+  const userInfo = getUserInfo() as { id?: string; userId?: string } | null;
+  return userInfo?.id || userInfo?.userId || '';
+};
+
+const normalizeSharedTo = (device: ApiDevice) => {
+  if (Array.isArray(device.sharedTo)) {
+    return device.sharedTo;
+  }
+  if (Array.isArray(device.shareTo)) {
+    return device.shareTo;
+  }
+  return [];
+};
+
+const isSharedUser = (device: ApiDevice) => {
+  const currentUserId = getCurrentUserId();
+  if (!currentUserId) return false;
+  const sharedTo = normalizeSharedTo(device);
+  return sharedTo.some((user) => user.id === currentUserId);
+};
+
 Page({
   data: {
     device: null as ApiDevice | null,
@@ -59,6 +82,7 @@ Page({
     detailScrollReady: false,
     shareNotice: '',
     canShare: false,
+    isReadOnly: false,
     shareCode: '',
     isRefreshing: false,
     showEditModal: false,
@@ -93,6 +117,7 @@ Page({
           },
           shareNotice,
           shareCode: generateShareCode(),
+          isReadOnly: false,
         },
         () => {
           this.updateScrollState();
@@ -115,11 +140,18 @@ Page({
       }
       const normalizedDevice = {
         ...device,
-        sharedTo: Array.isArray(device.sharedTo) ? device.sharedTo : [],
+        sharedTo: normalizeSharedTo(device),
       };
-      this.setData({ device: normalizedDevice, shareCode: generateShareCode() }, () => {
-        this.updateScrollState();
-      });
+      this.setData(
+        {
+          device: normalizedDevice,
+          shareCode: generateShareCode(),
+          isReadOnly: isSharedUser(normalizedDevice),
+        },
+        () => {
+          this.updateScrollState();
+        },
+      );
       this.fetchDeviceDetail();
       this.setData({ shareNotice: '' });
       wx.setNavigationBarTitle({
@@ -187,7 +219,7 @@ Page({
           const device = res.data as ApiDevice;
           const normalizedDevice = {
             ...device,
-            sharedTo: Array.isArray(device.sharedTo) ? device.sharedTo : [],
+            sharedTo: normalizeSharedTo(device),
           };
           if (normalizedDevice.deviceTypeId === 9) {
             const encodedName = encodeURIComponent(normalizedDevice.name || '');
@@ -196,9 +228,16 @@ Page({
             });
             return;
           }
-          this.setData({ device: normalizedDevice, shareCode: generateShareCode() }, () => {
-            this.updateScrollState();
-          });
+          this.setData(
+            {
+              device: normalizedDevice,
+              shareCode: generateShareCode(),
+              isReadOnly: isSharedUser(normalizedDevice),
+            },
+            () => {
+              this.updateScrollState();
+            },
+          );
           wx.setNavigationBarTitle({
             title: normalizedDevice?.name || '设备详情',
           });
@@ -258,7 +297,7 @@ Page({
     const encodedNickname = encodeURIComponent(nickname || '');
     const encodedShareCode = encodeURIComponent(shareCode);
     const path = device?.id
-      ? `/pages/shareReceive/shareReceive?fromId=${userId}&fromName=${encodedNickname}&deviceId=${device.id}&shareCode=${encodedShareCode}&deviceName=${encodedName}`
+      ? `/pages/device/device?fromId=${userId}&fromName=${encodedNickname}&deviceId=${device.id}&shareCode=${encodedShareCode}&deviceName=${encodedName}`
       : '/pages/device/device';
 
     return {
@@ -274,6 +313,7 @@ Page({
   },
 
   onPrepareShare() {
+    if (this.data.isReadOnly) return;
     if (!isLoggedIn()) {
       this.onShareToFamily();
       return;
@@ -296,6 +336,12 @@ Page({
   },
 
   onShareAppMessage(options: WechatMiniprogram.Page.IShareAppMessageOption) {
+    if (this.data.isReadOnly) {
+      return {
+        title: '设备详情',
+        path: '/pages/device/device',
+      };
+    }
     if (!isLoggedIn()) {
       return {
         title: '请先登录后再分享',
@@ -336,6 +382,7 @@ Page({
   },
 
   onRemoveUser(e: WechatMiniprogram.TouchEvent) {
+    if (this.data.isReadOnly) return;
     const userId = e.currentTarget.dataset.id as string;
     const device = this.data.device;
     if (!device) return;
@@ -392,6 +439,7 @@ Page({
   },
 
   onDeleteDevice() {
+    if (this.data.isReadOnly) return;
     wx.showModal({
       title: '删除设备',
       content: '删除后该设备将无法再触发你的通知',
@@ -432,6 +480,7 @@ Page({
   },
 
   onEditDevice() {
+    if (this.data.isReadOnly) return;
     const device = this.data.device;
     if (!device) return;
     this.setData({

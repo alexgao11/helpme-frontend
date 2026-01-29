@@ -7,9 +7,8 @@ App<IAppOption>({
   onLaunch(options: WechatMiniprogram.App.LaunchShowOption) {
     // 检查登录状态
     if (!isLoggedIn()) {
-      const path = options?.path || ''
       const query = (options?.query || {}) as Record<string, string>
-      if (path === 'pages/shareReceive/shareReceive' && query.deviceId && query.shareCode) {
+      if (query.deviceId && query.shareCode) {
         wx.setStorageSync(PENDING_SHARE_KEY, {
           deviceId: query.deviceId,
           shareCode: query.shareCode,

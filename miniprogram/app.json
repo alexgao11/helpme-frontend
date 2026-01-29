@@ -3,7 +3,6 @@
     "pages/device/device",
     "pages/deviceDetail/deviceDetail",
     "pages/deviceDetail/9/index",
-    "pages/shareReceive/shareReceive",
     "pages/profile/profile",
     "pages/userinfo/userinfo",
     "pages/emergencyContacts/emergencyContacts",

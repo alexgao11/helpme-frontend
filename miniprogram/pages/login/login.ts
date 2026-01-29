@@ -110,19 +110,19 @@ Page({
                 if (res.statusCode === 201) {
                   resolve()
                 } else {
-                  reject(new Error((res.data as any)?.message || '领取失败'))
+                  reject(new Error((res.data as any)?.message || '添加失败'))
                 }
               },
               fail: reject
             })
           })
           wx.removeStorageSync(PENDING_SHARE_KEY)
-          wx.showToast({ title: '领取成功', icon: 'success' })
+          wx.showToast({ title: '设备已添加', icon: 'success' })
         } catch (error) {
           console.log(error)
           wx.removeStorageSync(PENDING_SHARE_KEY)
           wx.showToast({
-            title: '领取失败，请稍后重试',
+            title: '添加失败，请稍后重试',
             icon: 'none'
           })
         }
