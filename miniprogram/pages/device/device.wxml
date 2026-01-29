@@ -33,6 +33,7 @@
           </button>
         </view>
         <view class="form-desc">输入 WiFi 信息以配置设备</view>
+        <view class="form-desc-compact">请确保蓝牙已打开</view>
 
         <view class="config-form" wx:if="{{configStep === 'idle' || configStep === 'error'}}">
           <view class="input-group">
