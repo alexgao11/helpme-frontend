@@ -1,6 +1,6 @@
 import { setToken, setUserInfo } from '../../utils/auth'
 import { requestAlarmSubscribe } from '../../utils/subscribe'
-import { API_BASE } from '../../utils/constant'
+import { API_BASE, PENDING_SHARE_KEY } from '../../utils/constant'
 
 Page({
   data: {
@@ -89,6 +89,44 @@ Page({
       setUserInfo(response.user)
 
       wx.hideLoading()
+
+      const pendingShare = wx.getStorageSync(PENDING_SHARE_KEY) as
+        | { deviceId?: string; shareCode?: string }
+        | undefined
+      if (pendingShare?.deviceId && pendingShare.shareCode) {
+        try {
+          await new Promise<void>((resolve, reject) => {
+            wx.request({
+              url: `${API_BASE}/api/devices/${pendingShare.deviceId}/share/accept`,
+              method: 'POST',
+              header: {
+                Authorization: `Bearer ${response.token}`,
+                'content-type': 'application/json'
+              },
+              data: {
+                shareCode: pendingShare.shareCode
+              },
+              success: (res) => {
+                if (res.statusCode === 201) {
+                  resolve()
+                } else {
+                  reject(new Error((res.data as any)?.message || '领取失败'))
+                }
+              },
+              fail: reject
+            })
+          })
+          wx.removeStorageSync(PENDING_SHARE_KEY)
+          wx.showToast({ title: '领取成功', icon: 'success' })
+        } catch (error) {
+          console.log(error)
+          wx.removeStorageSync(PENDING_SHARE_KEY)
+          wx.showToast({
+            title: '领取失败，请稍后重试',
+            icon: 'none'
+          })
+        }
+      }
 
       await requestAlarmSubscribe()
 

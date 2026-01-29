@@ -16,23 +16,37 @@ interface EditDeviceForm {
   location: string;
 }
 
-const requestShareCode = (deviceId: string, token: string) =>
-  new Promise<string>((resolve, reject) => {
+const generateShareCode = (length = 12) => {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let code = '';
+  for (let i = 0; i < length; i += 1) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+};
+
+const registerShareCode = (
+  deviceId: string,
+  token: string,
+  shareCode: string,
+) =>
+  new Promise<void>((resolve, reject) => {
     wx.request({
       url: `${API_BASE}/api/devices/${deviceId}/share`,
       method: 'POST',
       header: {
         Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      data: {
+        shareCode,
       },
       success: (res: WechatMiniprogram.RequestSuccessCallbackResult) => {
-        if (res.statusCode === 201 && res.data) {
-          const data = res.data as { shareCode?: string };
-          if (data.shareCode) {
-            resolve(data.shareCode);
-            return;
-          }
+        if (res.statusCode === 201) {
+          resolve();
+          return;
         }
-        reject(new Error('分享码获取失败'));
+        reject(new Error('分享码登记失败'));
       },
       fail: reject,
     });
@@ -46,7 +60,6 @@ Page({
     shareNotice: '',
     canShare: false,
     shareCode: '',
-    isPreparingShare: false,
     isRefreshing: false,
     showEditModal: false,
     isUpdatingDevice: false,
@@ -79,6 +92,7 @@ Page({
             activeAlarmCount: 0,
           },
           shareNotice,
+          shareCode: generateShareCode(),
         },
         () => {
           this.updateScrollState();
@@ -103,7 +117,7 @@ Page({
         ...device,
         sharedTo: Array.isArray(device.sharedTo) ? device.sharedTo : [],
       };
-      this.setData({ device: normalizedDevice }, () => {
+      this.setData({ device: normalizedDevice, shareCode: generateShareCode() }, () => {
         this.updateScrollState();
       });
       this.fetchDeviceDetail();
@@ -182,7 +196,7 @@ Page({
             });
             return;
           }
-          this.setData({ device: normalizedDevice }, () => {
+          this.setData({ device: normalizedDevice, shareCode: generateShareCode() }, () => {
             this.updateScrollState();
           });
           wx.setNavigationBarTitle({
@@ -269,44 +283,56 @@ Page({
       wx.showToast({ title: '设备信息缺失', icon: 'none' });
       return;
     }
-    if (this.data.isPreparingShare) return;
     const token = getToken();
     if (!token) {
       this.onShareToFamily();
       return;
     }
-
-    this.setData({ isPreparingShare: true });
-    wx.showLoading({ title: '生成分享码...' });
-    requestShareCode(deviceId, token)
-      .then((shareCode) => {
-        this.setData({ shareCode });
-      })
-      .catch((error) => {
-        console.log('[deviceDetail] fetch share code failed', error);
-        wx.showToast({ title: '生成分享码失败', icon: 'none' });
-      })
-      .finally(() => {
-        wx.hideLoading();
-        this.setData({ isPreparingShare: false });
-      });
+    const shareCode = this.data.shareCode || generateShareCode();
+    this.setData({ shareCode });
+    registerShareCode(deviceId, token, shareCode).catch((error) => {
+      console.log('[deviceDetail] register share code failed', error);
+    });
   },
 
-  onShareAppMessage() {
+  onShareAppMessage(options: WechatMiniprogram.Page.IShareAppMessageOption) {
     if (!isLoggedIn()) {
       return {
         title: '请先登录后再分享',
         path: '/pages/login/login',
       };
     }
-    const shareCode = this.data.shareCode;
-    if (!shareCode || !this.data.device?.id) {
+    const deviceId = this.data.device?.id;
+    if (!deviceId) {
       return {
         title: '设备分享',
         path: '/pages/device/device',
       };
     }
-    return this.buildSharePayload(shareCode);
+    const shareCode = this.data.shareCode || generateShareCode();
+    if (shareCode !== this.data.shareCode) {
+      this.setData({ shareCode });
+    }
+    const payload: WechatMiniprogram.Page.ICustomShareContent & {
+      success?: () => void;
+      fail?: () => void;
+    } = this.buildSharePayload(shareCode);
+    const token = getToken();
+    if (!token) {
+      return payload;
+    }
+    payload.success = () => {
+      if (options?.from !== 'button') {
+        registerShareCode(deviceId, token, shareCode).catch((error) => {
+          console.log('[deviceDetail] register share code failed', error);
+        });
+      }
+      this.setData({ shareCode: generateShareCode() });
+    };
+    payload.fail = () => {
+      console.log('[deviceDetail] share canceled');
+    };
+    return payload;
   },
 
   onRemoveUser(e: WechatMiniprogram.TouchEvent) {
