@@ -2,7 +2,7 @@
   <view class="page-content">
     <view class="refresh-tip" wx:if="{{isRefreshing}}">正在刷新...</view>
     <view class="subscribe-banner" wx:if="{{showSubscribeButton}}">
-      <view class="subscribe-text">授权接收告警通知</view>
+      <view class="subscribe-text">请点击授权，否则可能收不到通知</view>
       <button
         class="subscribe-btn"
         bindtap="onSubscribeButtonTap"

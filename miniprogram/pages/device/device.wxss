@@ -38,7 +38,8 @@
 
 .subscribe-text {
   font-size: 28rpx;
-  color: #1f2a44;
+  color: #d84315;
+  font-weight: 600;
 }
 
 .subscribe-btn {
