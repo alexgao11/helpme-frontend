@@ -89,7 +89,15 @@ const isSharedUser = (device: ApiDevice) => {
   return sharedTo.some((user) => user.id === currentUserId);
 };
 
+const normalizeDeviceId = (id?: string) => {
+  if (!id || id === 'undefined' || id === 'null') return '';
+  return id;
+};
+
+const isValidDeviceId = (id?: string) => Boolean(normalizeDeviceId(id));
+
 Page({
+  hasLoadedDetail: false,
   data: {
     device: null as ApiDevice | null,
     detailScrollable: false,
@@ -115,7 +123,8 @@ Page({
   },
 
   onLoad(options: Record<string, string>) {
-    if (options?.id) {
+    const optionId = normalizeDeviceId(options?.id || options?.deviceId || '');
+    if (optionId) {
       const name = options.name ? decodeURIComponent(options.name) : null;
       const shareFromName = options.fromName
         ? decodeURIComponent(options.fromName)
@@ -123,12 +132,12 @@ Page({
       const shareFromId = options.fromId || '';
       const shareNotice =
         shareFromName || shareFromId
-          ? `通过用户${shareFromName || shareFromId}分享的设备ID：${options.id}`
+          ? `通过用户${shareFromName || shareFromId}分享的设备ID：${optionId}`
           : '';
       this.setData(
         {
           device: {
-            id: options.id,
+            id: optionId,
             name,
             deviceTypeId: 9,
             status: 0,
@@ -146,22 +155,51 @@ Page({
         },
       );
       this.fetchDeviceDetail();
+      this.hasLoadedDetail = true;
       wx.setNavigationBarTitle({
         title: name || '设备详情',
       });
+    } else if (options?.id || options?.deviceId) {
+      console.warn('[alarmDetail] invalid deviceId from options', {
+        id: options?.id,
+        deviceId: options?.deviceId,
+      });
+      wx.showToast({ title: '设备ID无效', icon: 'none' });
     }
 
-    const eventChannel = this.getOpenerEventChannel();
+    const eventChannel = this.getOpenerEventChannel?.();
+    if (!eventChannel || typeof eventChannel.on !== 'function') {
+      return;
+    }
     eventChannel.on('device', (device: ApiDevice) => {
+      const normalizedId = normalizeDeviceId(
+        (device as ApiDevice & { deviceId?: string })?.id ||
+          (device as ApiDevice & { deviceId?: string })?.deviceId,
+      );
+      if (!normalizedId) {
+        if (isValidDeviceId(this.data.device?.id)) {
+          return;
+        }
+        console.warn('[alarmDetail] invalid deviceId from channel', {
+          id: device?.id,
+          deviceId: (device as ApiDevice & { deviceId?: string })?.deviceId,
+        });
+        wx.showToast({ title: '设备ID无效', icon: 'none' });
+        return;
+      }
+      if (this.hasLoadedDetail) {
+        return;
+      }
       if (device?.deviceTypeId !== 9) {
         const encodedName = encodeURIComponent(device?.name || '');
         wx.redirectTo({
-          url: `/pages/deviceDetail/deviceDetail?id=${device.id}&name=${encodedName}`,
+          url: `/pages/deviceDetail/deviceDetail?id=${normalizedId}&name=${encodedName}`,
         });
         return;
       }
       const normalizedDevice = {
         ...device,
+        id: normalizedId,
         sharedTo: normalizeSharedTo(device),
         buttons: Array.isArray(device.buttons) ? device.buttons : [],
       };
@@ -176,6 +214,7 @@ Page({
         },
       );
       this.fetchDeviceDetail();
+      this.hasLoadedDetail = true;
       this.setData({ shareNotice: '' });
       wx.setNavigationBarTitle({
         title: device?.name || '设备详情',
@@ -187,9 +226,6 @@ Page({
     this.setData({ canShare: isLoggedIn() });
     if (this.data.device) {
       this.updateScrollState();
-    }
-    if (this.data.device?.id) {
-      this.fetchDeviceDetail();
     }
   },
 
@@ -208,7 +244,7 @@ Page({
     stopPullDown?: boolean;
   }) {
     const deviceId = this.data.device?.id;
-    if (!deviceId) {
+    if (!isValidDeviceId(deviceId)) {
       console.log('[alarmDetail] missing deviceId, skip fetch');
       if (options?.stopRefresh) {
         this.setData({ isRefreshing: false });
@@ -239,16 +275,23 @@ Page({
       },
       success: (res: WechatMiniprogram.RequestSuccessCallbackResult) => {
         if (res.statusCode === 200 && res.data) {
-          const device = res.data as ApiDevice;
+          const payload = res.data as ApiDevice & { device?: ApiDevice };
+          const device = payload.device || (payload as ApiDevice);
+          const normalizedId = normalizeDeviceId(
+            (device as ApiDevice & { deviceId?: string })?.id ||
+              (device as ApiDevice & { deviceId?: string })?.deviceId ||
+              this.data.device?.id,
+          );
           const normalizedDevice = {
             ...device,
+            id: normalizedId,
             sharedTo: normalizeSharedTo(device),
             buttons: Array.isArray(device.buttons) ? device.buttons : [],
           };
-          if (normalizedDevice.deviceTypeId !== 9) {
+          if (normalizedDevice.deviceTypeId !== 9 && normalizedId) {
             const encodedName = encodeURIComponent(normalizedDevice.name || '');
             wx.redirectTo({
-              url: `/pages/deviceDetail/deviceDetail?id=${normalizedDevice.id}&name=${encodedName}`,
+              url: `/pages/deviceDetail/deviceDetail?id=${normalizedId}&name=${encodedName}`,
             });
             return;
           }

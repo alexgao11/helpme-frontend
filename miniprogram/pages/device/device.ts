@@ -46,6 +46,7 @@ Page({
   readInfoTimer: undefined as number | undefined,
   readInfoAttempts: 0,
   subscribeQuotaChecking: false,
+  hasLoadedDevices: false,
   data: {
     // 设备列表
     devices: [] as ApiDevice[],
@@ -115,6 +116,7 @@ Page({
       this.getTabBar().setData({ selected: 0 });
     }
     wx.setNavigationBarTitle({ title: '我的设备' });
+    if (this.hasLoadedDevices) return;
     this.loadDevices();
   },
 
@@ -279,11 +281,18 @@ Page({
       success: (res) => {
         if (res.statusCode === 200) {
           const payload = res.data as ApiDevice[] | DevicesResponse;
-          const devices = Array.isArray(payload)
+          const devices = (Array.isArray(payload)
             ? payload
             : Array.isArray(payload?.devices)
               ? payload.devices
-              : [];
+              : []
+          ).map((device) => {
+            const typedDevice = device as ApiDevice & { deviceId?: string };
+            return {
+              ...typedDevice,
+              id: typedDevice.id || typedDevice.deviceId || '',
+            };
+          });
           const remainingCount = Array.isArray(payload)
             ? undefined
             : payload?.remainingWeChatMessageCount;
@@ -294,6 +303,7 @@ Page({
               this.handleSubscribeQuota(remainingCount);
             },
           );
+          this.hasLoadedDevices = true;
         } else {
           this.setData({ loadError: '设备加载失败' }, () => {
             this.updatePageScrollState();
@@ -327,10 +337,20 @@ Page({
     const device = this.data.devices[index];
     if (!device) return;
 
+    const deviceId =
+      (device as ApiDevice & { deviceId?: string })?.id ||
+      (device as ApiDevice & { deviceId?: string })?.deviceId ||
+      '';
+    if (!deviceId) {
+      wx.showToast({ title: '设备ID无效', icon: 'none' });
+      return;
+    }
+
+    const encodedName = encodeURIComponent(device.name || '');
     const detailUrl =
       device.deviceTypeId === 9
-        ? '/pages/deviceDetail/9/index'
-        : '/pages/deviceDetail/deviceDetail';
+        ? `/pages/deviceDetail/9/index?id=${deviceId}&name=${encodedName}`
+        : `/pages/deviceDetail/deviceDetail?id=${deviceId}&name=${encodedName}`;
     wx.navigateTo({
       url: detailUrl,
       success: (res) => {
