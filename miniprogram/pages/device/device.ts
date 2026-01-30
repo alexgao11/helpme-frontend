@@ -20,6 +20,12 @@ interface ApiDevice {
   location: string | null;
   sharedTo: Array<{ id: string; name: string }>;
   activeAlarmCount: number;
+  totalAlarmsCount?: number;
+}
+
+interface DevicesResponse {
+  devices?: ApiDevice[];
+  remainingWeChatMessageCount?: number;
 }
 
 // 目标设备名称
@@ -39,6 +45,7 @@ Page({
   configCloseTimer: undefined as number | undefined,
   readInfoTimer: undefined as number | undefined,
   readInfoAttempts: 0,
+  subscribeQuotaChecking: false,
   data: {
     // 设备列表
     devices: [] as ApiDevice[],
@@ -69,6 +76,11 @@ Page({
     bleReadServiceId: '',
     bleReadCharacteristicId: '',
     isAcceptingShare: false,
+
+    // 订阅消息额度
+    remainingWeChatMessageCount: undefined as number | undefined,
+    showSubscribeButton: false,
+    isIncrementingQuota: false,
   },
 
   onLoad(options: Record<string, string>) {
@@ -104,7 +116,6 @@ Page({
     }
     wx.setNavigationBarTitle({ title: '我的设备' });
     this.loadDevices();
-    this.checkSubscribeAuth();
   },
 
   onPullDownRefresh() {
@@ -129,20 +140,82 @@ Page({
   checkSubscribeAuth() {
     refreshSubscribeStatus().then(() => {
       if (!needsSubscribeAuth()) {
+        this.setData({ showSubscribeButton: false });
         return;
       }
-      wx.showModal({
-        title: '告警通知',
-        content: '授权小程序发送告警通知',
-        confirmText: '去授权',
-        success: (res) => {
-          if (!res.confirm) {
-            return;
-          }
-          requestAlarmSubscribe();
-        },
-      });
+      this.setData({ showSubscribeButton: true });
     });
+  },
+
+  handleSubscribeQuota(remaining?: number) {
+    const shouldPrompt = remaining === undefined || remaining <= 1;
+    if (!shouldPrompt) {
+      this.setData({ showSubscribeButton: false });
+      return;
+    }
+    if (this.subscribeQuotaChecking) return;
+    this.subscribeQuotaChecking = true;
+    this.tryAutoSubscribe().finally(() => {
+      this.subscribeQuotaChecking = false;
+    });
+  },
+
+  tryAutoSubscribe() {
+    return this.requestSubscribeAndIncrement({ showToastOnReject: false });
+  },
+
+  requestSubscribeAndIncrement(options?: { showToastOnReject?: boolean }) {
+    const showToast = options?.showToastOnReject ?? true;
+    return requestAlarmSubscribe().then((status) => {
+      if (status === 'accept') {
+        this.incrementWeChatQuotaOnce();
+        this.setData({ showSubscribeButton: false });
+        return true;
+      }
+      this.setData({ showSubscribeButton: true });
+      if (showToast) {
+        wx.showToast({ title: '需要授权后才能接收通知', icon: 'none' });
+      }
+      return false;
+    });
+  },
+
+  incrementWeChatQuotaOnce() {
+    const token = getToken();
+    if (!token) return;
+    if (this.data.isIncrementingQuota) return;
+
+    this.setData({ isIncrementingQuota: true });
+    wx.request({
+      url: `${API_BASE}/api/user/wechat-message-quota/increment`,
+      method: 'POST',
+      header: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      success: (res) => {
+        if (res.statusCode === 200) {
+          const remainingCount = Number(
+            (res.data as { remainingCount?: number })?.remainingCount,
+          );
+          if (!Number.isNaN(remainingCount)) {
+            this.setData({ remainingWeChatMessageCount: remainingCount });
+          }
+        } else {
+          this.setData({ showSubscribeButton: true });
+        }
+      },
+      fail: () => {
+        this.setData({ showSubscribeButton: true });
+      },
+      complete: () => {
+        this.setData({ isIncrementingQuota: false });
+      },
+    });
+  },
+
+  onSubscribeButtonTap() {
+    this.requestSubscribeAndIncrement();
   },
 
   acceptShare(deviceId: string, shareCode: string) {
@@ -204,10 +277,23 @@ Page({
       method: 'GET',
       header: token ? { Authorization: `Bearer ${token}` } : {},
       success: (res) => {
-        if (res.statusCode === 200 && Array.isArray(res.data)) {
-          this.setData({ devices: res.data }, () => {
-            this.updatePageScrollState();
-          });
+        if (res.statusCode === 200) {
+          const payload = res.data as ApiDevice[] | DevicesResponse;
+          const devices = Array.isArray(payload)
+            ? payload
+            : Array.isArray(payload?.devices)
+              ? payload.devices
+              : [];
+          const remainingCount = Array.isArray(payload)
+            ? undefined
+            : payload?.remainingWeChatMessageCount;
+          this.setData(
+            { devices, remainingWeChatMessageCount: remainingCount },
+            () => {
+              this.updatePageScrollState();
+              this.handleSubscribeQuota(remainingCount);
+            },
+          );
         } else {
           this.setData({ loadError: '设备加载失败' }, () => {
             this.updatePageScrollState();
