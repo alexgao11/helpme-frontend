@@ -67,6 +67,7 @@ Page({
     configStep: 'idle' as ConfigStep,
     statusText: '',
     resultMessage: '',
+    readInfoValue: '',
 
     // 设备信息
     connectedDevice: null as BluetoothDevice | null,
@@ -281,11 +282,12 @@ Page({
       success: (res) => {
         if (res.statusCode === 200) {
           const payload = res.data as ApiDevice[] | DevicesResponse;
-          const devices = (Array.isArray(payload)
-            ? payload
-            : Array.isArray(payload?.devices)
-              ? payload.devices
-              : []
+          const devices = (
+            Array.isArray(payload)
+              ? payload
+              : Array.isArray(payload?.devices)
+                ? payload.devices
+                : []
           ).map((device) => {
             const typedDevice = device as ApiDevice & { deviceId?: string };
             return {
@@ -426,6 +428,7 @@ Page({
         configStep: 'scanning',
         statusText: '正在搜索设备...',
         resultMessage: '',
+        readInfoValue: '',
       },
       () => {
         this.updatePageScrollState();
@@ -714,10 +717,15 @@ Page({
       value: buffer,
       success: () => {
         console.log('WiFi 配置已发送');
+        this.setData({
+          configStep: 'sending_getinfo',
+          statusText: '正在读取设备信息...',
+        });
         this.sendGetInfoOnce();
-        setTimeout(() => {
+        this.clearReadInfoTimer();
+        this.readInfoTimer = setTimeout(() => {
           this.startReadInfoPolling();
-        }, 1000);
+        }, 5000);
       },
       fail: (err) => {
         console.error('发送 WiFi 配置失败', err);
@@ -741,7 +749,7 @@ Page({
   pollReadInfo() {
     if (this.data.configStep !== 'sending_getinfo') return;
 
-    if (this.readInfoAttempts >= 30) {
+    if (this.readInfoAttempts >= 10) {
       console.warn('读取设备信息超过最大次数');
       this.disconnectDevice();
       this.onConfigError('获取设备信息失败');
@@ -754,7 +762,7 @@ Page({
     this.readDeviceInfoOnce();
     this.readInfoTimer = setTimeout(() => {
       this.pollReadInfo();
-    }, 1000);
+    }, 3000);
   },
 
   // 发送 getinfo
@@ -807,6 +815,9 @@ Page({
     console.log('处理响应:', trimmedValue, '当前步骤:', this.data.configStep);
 
     if (this.data.configStep === 'sending_getinfo') {
+      if (trimmedValue) {
+        this.setData({ readInfoValue: trimmedValue });
+      }
       const parts = trimmedValue.split(',');
       if (parts.length < 3) {
         return;
@@ -872,6 +883,7 @@ Page({
         configStep: 'done',
         statusText: '配置完成',
         resultMessage: result,
+        readInfoValue: '',
       },
       () => {
         this.updatePageScrollState();
@@ -895,6 +907,7 @@ Page({
       {
         configStep: 'error',
         statusText: message,
+        readInfoValue: '',
       },
       () => {
         this.updatePageScrollState();
@@ -947,6 +960,7 @@ Page({
         configStep: 'idle',
         statusText: '',
         resultMessage: '',
+        readInfoValue: '',
         connectedDevice: null,
         bleServiceId: '',
         bleCharacteristicId: '',

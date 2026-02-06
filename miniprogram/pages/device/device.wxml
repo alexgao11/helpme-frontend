@@ -83,6 +83,9 @@
             <view class="loading-spinner"></view>
           </view>
           <view class="progress-status">{{statusText}}</view>
+          <view class="progress-status" wx:if="{{readInfoValue}}">
+            读取值: {{readInfoValue}}
+          </view>
           <button class="cancel-btn" bindtap="onReset">取消</button>
         </view>
 
@@ -111,7 +114,7 @@
   >
     <template
       is="deviceContent"
-      data="{{devices: devices, isLoading: isLoading, loadError: loadError, showConfig: showConfig, configStep: configStep, ssid: ssid, password: password, showPassword: showPassword, statusText: statusText, resultMessage: resultMessage, isRefreshing: isRefreshing, showSubscribeButton: showSubscribeButton, isIncrementingQuota: isIncrementingQuota}}"
+      data="{{devices: devices, isLoading: isLoading, loadError: loadError, showConfig: showConfig, configStep: configStep, ssid: ssid, password: password, showPassword: showPassword, statusText: statusText, resultMessage: resultMessage, readInfoValue: readInfoValue, isRefreshing: isRefreshing, showSubscribeButton: showSubscribeButton, isIncrementingQuota: isIncrementingQuota}}"
     />
   </scroll-view>
 
